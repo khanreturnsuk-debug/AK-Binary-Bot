@@ -23,8 +23,13 @@ jobs:
         with:
           channel: 'stable'
 
-      - name: Recreate Missing Android Files
+      - name: Recreate Android Project
         run: flutter create . --platforms=android
+
+      - name: Update Endpoint in Code
+        run: |
+          sed -i 's|get_signal|signal|g' lib/main.dart || true
+          sed -i 's|AKPremiumBot|AKPrimiumeBot|g' lib/main.dart || true
 
       - name: Get Dependencies
         run: flutter pub get
