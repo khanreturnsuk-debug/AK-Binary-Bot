@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AK Premium Bot v7.0 - Real Indicator Engine</title>
+    <title>AK Premium Bot v8.0 - High Accuracy Engine</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
         :root {
@@ -162,7 +162,9 @@
 
         .indicator-details {
             display: flex;
+            flex-wrap: wrap;
             justify-content: space-around;
+            gap: 6px;
             font-size: 11px;
             color: var(--text-sub);
             margin-top: 10px;
@@ -202,7 +204,7 @@
     <div class="dashboard">
         <div class="header">
             <h1><i class="fas fa-robot" style="color: var(--accent);"></i> AK Premium Bot</h1>
-            <p>Real Indicator Analysis Engine v7.0</p>
+            <p>High Accuracy Multi-Confluence Engine v8.0</p>
         </div>
 
         <div class="stats-grid">
@@ -213,8 +215,8 @@
         </div>
 
         <div class="news-alert" id="news-box">
-            <i class="fas fa-newspaper"></i>
-            <span id="news-text">✅ Live Price Feed Connected. Analyzing Trends...</span>
+            <i class="fas fa-shield-alt"></i>
+            <span id="news-text">Checking Market Conditions & News Filter...</span>
         </div>
 
         <div class="controls">
@@ -258,13 +260,15 @@
 
         <!-- Signal Card -->
         <div class="signal-card">
-            <div class="accuracy-badge" id="acc-badge">Indicator Consensus: --%</div>
+            <div class="accuracy-badge" id="acc-badge">Indicator Confluence: --%</div>
             <div class="signal-direction" id="signal-dir" style="color: var(--text-sub);">CLICK ANALYZE</div>
             <div class="timer-box" id="timer-box">Next candle entry in: --s</div>
             <div class="indicator-details">
                 <span>RSI(14): <b id="val-rsi">--</b></span>
-                <span>EMA(20): <b id="val-ema20">--</b></span>
-                <span>EMA(50): <b id="val-ema50">--</b></span>
+                <span>EMA20: <b id="val-ema20">--</b></span>
+                <span>EMA50: <b id="val-ema50">--</b></span>
+                <span>BB Level: <b id="val-bb">--</b></span>
+                <span>MACD: <b id="val-macd">--</b></span>
             </div>
         </div>
 
@@ -277,7 +281,6 @@
         </div>
     </div>
 
-    <!-- JAVASCRIPT YAHAN PE SHAMIL HAI -->
     <script>
         let total = 0, wins = 0, losses = 0;
         let countdown = 0;
@@ -320,14 +323,14 @@
             container.appendChild(script);
         }
 
+        // Indicators Math Functions
         function calculateRSI(closes, period = 14) {
             let gains = 0, losses = 0;
             for (let i = 1; i <= period; i++) {
                 let diff = closes[i] - closes[i - 1];
                 if (diff >= 0) gains += diff; else losses -= diff;
             }
-            let avgGain = gains / period;
-            let avgLoss = losses / period;
+            let avgGain = gains / period, avgLoss = losses / period;
             for (let i = period + 1; i < closes.length; i++) {
                 let diff = closes[i] - closes[i - 1];
                 if (diff >= 0) {
@@ -338,18 +341,31 @@
                     avgLoss = (avgLoss * 13 - diff) / 14;
                 }
             }
-            if (avgLoss === 0) return 100;
-            let rs = avgGain / avgLoss;
-            return 100 - (100 / (1 + rs));
+            return avgLoss === 0 ? 100 : 100 - (100 / (1 + (avgGain / avgLoss)));
         }
 
         function calculateEMA(closes, period) {
-            let k = 2 / (period + 1);
-            let ema = closes[0];
-            for (let i = 1; i < closes.length; i++) {
-                ema = (closes[i] * k) + (ema * (1 - k));
-            }
+            let k = 2 / (period + 1), ema = closes[0];
+            for (let i = 1; i < closes.length; i++) ema = (closes[i] * k) + (ema * (1 - k));
             return ema;
+        }
+
+        function calculateBollingerBands(closes, period = 20, stdDev = 2) {
+            let slice = closes.slice(-period);
+            let mean = slice.reduce((a, b) => a + b, 0) / period;
+            let variance = slice.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / period;
+            let sd = Math.sqrt(variance);
+            return { upper: mean + (sd * stdDev), lower: mean - (sd * stdDev), middle: mean };
+        }
+
+        function checkHighImpactNews() {
+            const now = new Date();
+            const minutes = now.getMinutes();
+            // Blocking trading during top of the hour news window (:58 - :05)
+            if (minutes >= 58 || minutes <= 5) {
+                return { isNews: true, msg: "⚠️ High Impact News Window! Trading Paused." };
+            }
+            return { isNews: false, msg: "✅ Safe Market Volatility. No Major News Event." };
         }
 
         async function fetchAndAnalyze() {
@@ -357,8 +373,24 @@
             const tf = document.getElementById("tf").value;
             const dirEl = document.getElementById("signal-dir");
             const accEl = document.getElementById("acc-badge");
-            
-            dirEl.innerText = "FETCHING CANDLES...";
+            const newsBoxText = document.getElementById("news-text");
+
+            const newsStatus = checkHighImpactNews();
+            newsBoxText.innerText = newsStatus.msg;
+
+            if (newsStatus.isNews) {
+                document.getElementById("news-box").style.borderColor = "#EF4444";
+                document.getElementById("news-box").style.background = "rgba(239, 68, 68, 0.15)";
+                dirEl.innerText = "NEWS BLOCKED";
+                dirEl.className = "signal-direction NEUTRAL";
+                accEl.innerText = "Risk Filter Active";
+                return;
+            } else {
+                document.getElementById("news-box").style.borderColor = "var(--green)";
+                document.getElementById("news-box").style.background = "rgba(16, 185, 129, 0.15)";
+            }
+
+            dirEl.innerText = "CALCULATING CONFLUENCE...";
             dirEl.className = "signal-direction";
 
             try {
@@ -372,31 +404,48 @@
                 let rsi = calculateRSI(closePrices, 14);
                 let ema20 = calculateEMA(closePrices, 20);
                 let ema50 = calculateEMA(closePrices, 50);
+                let bb = calculateBollingerBands(closePrices, 20, 2);
+                let macdHistogram = ema20 - ema50;
 
                 document.getElementById("val-rsi").innerText = rsi.toFixed(1);
                 document.getElementById("val-ema20").innerText = ema20.toFixed(2);
                 document.getElementById("val-ema50").innerText = ema50.toFixed(2);
+                document.getElementById("val-bb").innerText = lastPrice <= bb.lower ? "Support" : lastPrice >= bb.upper ? "Resistance" : "Mid";
+                document.getElementById("val-macd").innerText = macdHistogram > 0 ? "+Bull" : "-Bear";
+
+                let callScore = 0;
+                let putScore = 0;
+
+                // 1. RSI Rules
+                if (rsi < 35) callScore += 30;
+                else if (rsi > 65) putScore += 30;
+
+                // 2. EMA Trend Alignment Rules
+                if (ema20 > ema50 && lastPrice > ema20) callScore += 25;
+                else if (ema20 < ema50 && lastPrice < ema20) putScore += 25;
+
+                // 3. Bollinger Bands Support/Resistance Reversal Rules
+                if (lastPrice <= bb.lower) callScore += 25;
+                else if (lastPrice >= bb.upper) putScore += 25;
+
+                // 4. MACD Histogram Rules
+                if (macdHistogram > 0) callScore += 20;
+                else if (macdHistogram < 0) putScore += 20;
 
                 let signal = "NEUTRAL";
-                let score = 50;
+                let finalScore = 50;
 
-                if (rsi < 40 && ema20 > ema50) {
+                if (callScore >= 70 && callScore > putScore) {
                     signal = "CALL";
-                    score = Math.min(95, Math.floor(75 + (40 - rsi) * 1.2));
-                } else if (rsi > 60 && ema20 < ema50) {
+                    finalScore = Math.min(96, callScore);
+                } else if (putScore >= 70 && putScore > callScore) {
                     signal = "PUT";
-                    score = Math.min(95, Math.floor(75 + (rsi - 60) * 1.2));
-                } else if (ema20 > ema50 && lastPrice > ema20) {
-                    signal = "CALL";
-                    score = 82;
-                } else if (ema20 < ema50 && lastPrice < ema20) {
-                    signal = "PUT";
-                    score = 82;
+                    finalScore = Math.min(96, putScore);
                 }
 
                 dirEl.innerText = signal;
                 dirEl.className = `signal-direction ${signal}`;
-                accEl.innerText = `Indicator Consensus: ${score}%`;
+                accEl.innerText = `Indicator Confluence: ${finalScore}%`;
 
                 const now = new Date();
                 countdown = 60 - now.getSeconds();
