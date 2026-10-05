@@ -78,14 +78,13 @@
             box-shadow: 0 20px 40px rgba(0,0,0,0.6);
         }
 
-        /* Header Banner Styling for Full Uncropped Image Display */
+        /* Top Poster Banner Container */
         .banner-container {
             width: 100%;
             margin-bottom: 15px;
             border-radius: 16px;
             overflow: hidden;
             border: 1px solid rgba(255, 255, 255, 0.1);
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
             background: #000;
         }
 
@@ -217,7 +216,7 @@
 </head>
 <body>
 
-    <!-- WhatsApp Lock Gate -->
+    <!-- WhatsApp Lock Screen -->
     <div id="lock-screen">
         <div class="lock-card">
             <i class="fab fa-whatsapp"></i>
@@ -231,12 +230,12 @@
 
     <!-- Main Dashboard -->
     <div class="dashboard">
-        <!-- Header Image Banner Area -->
+        <!-- Exact Uploaded Poster Image -->
         <div class="banner-container">
-            <img src="IMG-20261005-WA3898.jpg" alt="AK Premium Bot Header Poster">
+            <img src="./IMG-20261005-WA3898.jpg" alt="AK Premium Bot Header Poster">
         </div>
 
-        <div style="text-align: center;">
+        <div style="text-align: center; margin-bottom: 15px;">
             <span class="quotex-badge"><i class="fas fa-bolt"></i> QUOTEX REAL-TIME SYNCED</span>
         </div>
 
@@ -373,8 +372,7 @@
             dirEl.className = "signal-direction";
 
             setTimeout(() => {
-                // Multi-Factor High Probability Score Generator
-                let randomScore = Math.floor(Math.random() * 19) + 76; // 76% to 94%
+                let randomScore = Math.floor(Math.random() * 19) + 76;
                 let directions = ["CALL", "PUT"];
                 let chosenDirection = directions[Math.floor(Math.random() * directions.length)];
 
