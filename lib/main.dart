@@ -1,4 +1,3 @@
-
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
@@ -210,7 +209,8 @@ class _HomeScreenState extends State<HomeScreen> {
       isLoading = true;
     });
 
-    final url = Uri.parse('https://AKPrimiumeBot.pythonanywhere.com/signal?pair=$selectedPair&tf=$selectedTF');
+    // API Query Parameters Corrected: symbol & interval
+    final url = Uri.parse('https://akprimiumebot.pythonanywhere.com/signal?symbol=$selectedPair&interval=$selectedTF');
 
     try {
       final response = await http.get(url);
@@ -225,14 +225,20 @@ class _HomeScreenState extends State<HomeScreen> {
         _startCountdown();
 
         // Check for Volatility Warning
-        if (data['is_volatile'] == true) {
+        if (data['is_volatile'] == true && data['warning'] != null) {
           _showVolatilityDialog(data['warning']);
         }
       } else {
-        setState(() => isLoading = false);
+        setState(() {
+          isLoading = false;
+          signalData = null;
+        });
       }
     } catch (e) {
-      setState(() => isLoading = false);
+      setState(() {
+        isLoading = false;
+        signalData = null;
+      });
     }
   }
 
@@ -389,34 +395,34 @@ class _HomeScreenState extends State<HomeScreen> {
                           color: const Color(0xFF1E293B),
                           borderRadius: BorderRadius.circular(20),
                           border: Border.all(
-                            color: signalData!['direction'].toString().contains('CALL')
+                            color: (signalData!['direction'] ?? '').toString().contains('CALL')
                                 ? Colors.green
-                                : (signalData!['direction'].toString().contains('PUT') ? Colors.red : Colors.grey),
+                                : ((signalData!['direction'] ?? '').toString().contains('PUT') ? Colors.red : Colors.grey),
                             width: 2,
                           ),
                         ),
                         child: Column(
                           children: [
                             Text(
-                              'Accuracy Score: ${signalData!['accuracy']}%',
+                              'Accuracy Score: ${signalData!['accuracy'] ?? 0}%',
                               style: TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
-                                color: (signalData!['accuracy'] as num) >= 60 ? Colors.greenAccent : Colors.orangeAccent,
+                                color: (signalData!['accuracy'] as num? ?? 0) >= 60 ? Colors.greenAccent : Colors.orangeAccent,
                               ),
                             ),
                             const Divider(height: 20, color: Colors.white10),
                             Text(
-                              signalData!['direction'],
+                              signalData!['direction'] ?? 'NEUTRAL',
                               style: TextStyle(
                                 fontSize: 28,
                                 fontWeight: FontWeight.bold,
-                                color: signalData!['direction'].toString().contains('CALL') ? Colors.green : Colors.red,
+                                color: (signalData!['direction'] ?? '').toString().contains('CALL') ? Colors.green : Colors.red,
                               ),
                             ),
                             const SizedBox(height: 12),
                             Text(
-                              'Next Candle Entry: ${signalData!['next_candle']}',
+                              'Next Candle Entry: ${signalData!['next_candle'] ?? 'N/A'}',
                               style: const TextStyle(color: Colors.white70),
                             ),
                             const SizedBox(height: 8),
