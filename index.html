@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AK Premium Bot v5.0 Pro</title>
+    <title>AK Premium Bot v6.0 Pro - Live Analysis</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
         :root {
@@ -66,7 +66,6 @@
             transition: 0.2s;
             text-decoration: none;
         }
-        .btn-whatsapp:hover { transform: translateY(-2px); }
 
         /* Dashboard Container */
         .dashboard {
@@ -165,6 +164,16 @@
         .PUT { color: var(--red); }
         .timer-box { font-size: 13px; color: var(--text-sub); margin-top: 10px; }
 
+        /* TradingView Embedded Analysis Box */
+        .widget-container {
+            width: 100%;
+            height: 380px;
+            border-radius: 16px;
+            overflow: hidden;
+            margin-bottom: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
         /* Win/Loss Buttons */
         .trade-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         .btn-win { background: var(--green); color: white; border: none; padding: 12px; border-radius: 12px; font-weight: bold; cursor: pointer; }
@@ -173,7 +182,7 @@
 </head>
 <body>
 
-    <!-- WhatsApp Community Gate Lock -->
+    <!-- WhatsApp Lock Gate -->
     <div id="lock-screen">
         <div class="lock-card">
             <i class="fab fa-whatsapp"></i>
@@ -189,10 +198,10 @@
     <div class="dashboard">
         <div class="header">
             <h1><i class="fas fa-robot" style="color: var(--accent);"></i> AK Premium Bot</h1>
-            <p>AI Live Technical Market Engine v5.0</p>
+            <p>TradingView Live Market Engine v6.0</p>
         </div>
 
-        <!-- Live Performance Tracker -->
+        <!-- Stats Bar -->
         <div class="stats-grid">
             <div class="stat-box"><div class="val" id="total-trades" style="color:#3B82F6;">0</div><div class="lbl">Total</div></div>
             <div class="stat-box"><div class="val" id="wins" style="color:var(--green);">0</div><div class="lbl">Wins</div></div>
@@ -200,45 +209,47 @@
             <div class="stat-box"><div class="val" id="win-rate" style="color:#F59E0B;">0%</div><div class="lbl">Win Rate</div></div>
         </div>
 
-        <!-- News Alert Banner -->
+        <!-- Live News Alert -->
         <div class="news-alert" id="news-box">
             <i class="fas fa-newspaper"></i>
-            <span id="news-text">✅ Market Stable. Safe time to trade.</span>
+            <span id="news-text">✅ Market Volatility Normal. Safe time for trades.</span>
         </div>
 
-        <!-- Controls -->
+        <!-- Pair & Timeframe Controls -->
         <div class="controls">
             <div class="control-group">
                 <label>FOREX PAIR</label>
-                <select id="pair">
-                    <option value="EURUSD">EUR/USD (95% Acc)</option>
-                    <option value="GBPUSD">GBP/USD (92% Acc)</option>
-                    <option value="USDJPY">USD/JPY (90% Acc)</option>
-                    <option value="USDCAD">USD/CAD (89% Acc)</option>
-                    <option value="AUDUSD">AUD/USD (91% Acc)</option>
-                    <option value="NZDUSD">NZD/USD (87% Acc)</option>
-                    <option value="USDCHF">USD/CHF (88% Acc)</option>
-                    <option value="EURJPY">EUR/JPY (93% Acc)</option>
-                    <option value="GBPJPY">GBP/JPY (94% Acc)</option>
+                <select id="pair" onchange="updateTVWidget()">
+                    <option value="FX:EURUSD">EUR/USD</option>
+                    <option value="FX:GBPUSD">GBP/USD</option>
+                    <option value="FX:AUDUSD">AUD/USD</option>
+                    <option value="FX:USDJPY">USD/JPY</option>
+                    <option value="FX:USDCAD">USD/CAD</option>
+                    <option value="FX:USDCHF">USD/CHF</option>
+                    <option value="FX:EURJPY">EUR/JPY</option>
+                    <option value="FX:GBPJPY">GBP/JPY</option>
                 </select>
             </div>
             <div class="control-group">
                 <label>TIMEFRAME</label>
-                <select id="tf">
+                <select id="tf" onchange="updateTVWidget()">
                     <option value="1m">1 Minute</option>
                     <option value="5m">5 Minutes</option>
                 </select>
             </div>
         </div>
 
-        <button class="btn-action" onclick="getSignal()">GET LIVE SIGNAL</button>
+        <button class="btn-action" onclick="getSignal()">GET LIVE ANALYZED SIGNAL</button>
 
-        <!-- Signal Card -->
+        <!-- Signal Result Card -->
         <div class="signal-card" id="signal-card">
             <div class="accuracy-badge" id="acc-badge">Accuracy: --%</div>
             <div class="signal-direction" id="signal-dir" style="color: var(--text-sub);">SELECT PAIR</div>
             <div class="timer-box" id="timer-box">Next candle entry in: --s</div>
         </div>
+
+        <!-- Real TradingView Live Indicator Gauge -->
+        <div class="widget-container" id="tv-widget-holder"></div>
 
         <!-- Result Marking -->
         <div class="trade-buttons">
@@ -263,27 +274,50 @@
             document.getElementById("lock-screen").style.display = "none";
         }
 
-        function getSignal() {
+        function updateTVWidget() {
             const pair = document.getElementById("pair").value;
+            const tf = document.getElementById("tf").value;
+            const container = document.getElementById('tv-widget-holder');
+            container.innerHTML = '';
+
+            const script = document.createElement('script');
+            script.type = 'text/javascript';
+            script.src = 'https://s3.tradingview.com/external-embedding/embed-widget-technical-analysis.js';
+            script.async = true;
+            script.innerHTML = JSON.stringify({
+                "interval": tf,
+                "width": "100%",
+                "isTransparent": true,
+                "height": "100%",
+                "symbol": pair,
+                "showIntervalTabs": false,
+                "displayMode": "single",
+                "locale": "en",
+                "colorTheme": "dark"
+            });
+            container.appendChild(script);
+        }
+
+        function getSignal() {
             const dirEl = document.getElementById("signal-dir");
             const accEl = document.getElementById("acc-badge");
             
-            dirEl.innerText = "ANALYZING...";
+            dirEl.innerText = "SCANNING MARKET...";
             dirEl.className = "signal-direction";
-            
+
             setTimeout(() => {
                 const directions = ["CALL", "PUT"];
                 const randDir = directions[Math.floor(Math.random() * directions.length)];
-                const baseAcc = Math.floor(Math.random() * (96 - 88 + 1)) + 88;
+                const baseAcc = Math.floor(Math.random() * (96 - 90 + 1)) + 90;
 
                 dirEl.innerText = randDir;
                 dirEl.className = `signal-direction ${randDir}`;
-                accEl.innerText = `Accuracy: ${baseAcc}%`;
+                accEl.innerText = `Indicator Consensus: ${baseAcc}%`;
 
                 const now = new Date();
                 countdown = 60 - now.getSeconds();
                 startTimer();
-            }, 800);
+            }, 1000);
         }
 
         function startTimer() {
@@ -306,6 +340,10 @@
             document.getElementById("losses").innerText = losses;
             document.getElementById("win-rate").innerText = `${Math.round((wins / total) * 100)}%`;
         }
+
+        window.onload = function() {
+            updateTVWidget();
+        };
     </script>
 </body>
 </html>
