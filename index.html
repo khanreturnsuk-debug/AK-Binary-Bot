@@ -1,76 +1,322 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ur">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AK Premium Bot Web</title>
+    <title>AK Premium Bot v5.0 Pro</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
-        body { font-family: Arial, sans-serif; background-color: #0F172A; color: white; text-align: center; padding: 20px; }
-        .card { background: #1E293B; padding: 20px; border-radius: 12px; max-width: 400px; margin: auto; }
-        select, button { padding: 10px; margin: 10px; border-radius: 8px; border: none; font-size: 16px; }
-        .signal { font-size: 24px; font-weight: bold; margin-top: 15px; }
-        .CALL { color: #22c55e; }
-        .PUT { color: #ef4444; }
+        :root {
+            --bg-color: #0B0E14;
+            --card-bg: #151A23;
+            --accent: #6366F1;
+            --accent-glow: rgba(99, 102, 241, 0.4);
+            --green: #10B981;
+            --red: #EF4444;
+            --text-main: #F3F4F6;
+            --text-sub: #9CA3AF;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: var(--bg-color); color: var(--text-main); display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 15px; }
+
+        /* Lock Screen Overlay */
+        #lock-screen {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(11, 14, 20, 0.96);
+            backdrop-filter: blur(12px);
+            z-index: 999;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .lock-card {
+            background: var(--card-bg);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 30px;
+            border-radius: 20px;
+            text-align: center;
+            max-width: 420px;
+            width: 100%;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        }
+
+        .lock-card i { font-size: 55px; color: #25D366; margin-bottom: 15px; }
+        .lock-card h2 { margin-bottom: 10px; font-size: 22px; color: #FFF; }
+        .lock-card p { color: var(--text-sub); font-size: 14px; margin-bottom: 25px; line-height: 1.5; }
+
+        .btn-whatsapp {
+            background: #25D366;
+            color: white;
+            border: none;
+            padding: 14px 20px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: bold;
+            width: 100%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            box-shadow: 0 4px 15px rgba(37, 211, 102, 0.3);
+            transition: 0.2s;
+            text-decoration: none;
+        }
+        .btn-whatsapp:hover { transform: translateY(-2px); }
+
+        /* Dashboard Container */
+        .dashboard {
+            width: 100%;
+            max-width: 480px;
+            background: var(--card-bg);
+            border-radius: 24px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            padding: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.6);
+        }
+
+        .header { text-align: center; margin-bottom: 20px; }
+        .header h1 { font-size: 22px; color: #FFF; letter-spacing: 0.5px; }
+        .header p { font-size: 12px; color: var(--text-sub); margin-top: 4px; }
+
+        /* Stats Bar */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+            background: rgba(0, 0, 0, 0.2);
+            padding: 12px;
+            border-radius: 16px;
+            margin-bottom: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .stat-box { text-align: center; }
+        .stat-box .val { font-size: 16px; font-weight: bold; }
+        .stat-box .lbl { font-size: 10px; color: var(--text-sub); margin-top: 2px; }
+
+        /* News Alert Banner */
+        .news-alert {
+            background: rgba(239, 68, 68, 0.15);
+            border: 1px solid var(--red);
+            color: #FCA5A5;
+            padding: 10px 14px;
+            border-radius: 12px;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        /* Controls */
+        .controls { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+        .control-group { text-align: left; }
+        .control-group label { font-size: 11px; color: var(--text-sub); margin-bottom: 6px; display: block; }
+        select {
+            width: 100%;
+            background: #0B0E14;
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            padding: 12px;
+            border-radius: 12px;
+            font-size: 13px;
+            outline: none;
+        }
+
+        .btn-action {
+            width: 100%;
+            background: linear-gradient(135deg, #6366F1, #4F46E5);
+            color: white;
+            border: none;
+            padding: 14px;
+            border-radius: 14px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 4px 20px var(--accent-glow);
+            margin-bottom: 20px;
+        }
+
+        /* Signal Result Box */
+        .signal-card {
+            background: rgba(0, 0, 0, 0.3);
+            border: 2px dashed rgba(255, 255, 255, 0.1);
+            border-radius: 18px;
+            padding: 20px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .accuracy-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            background: rgba(16, 185, 129, 0.2);
+            color: var(--green);
+            font-size: 12px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .signal-direction { font-size: 32px; font-weight: 900; letter-spacing: 1px; margin: 5px 0; }
+        .CALL { color: var(--green); }
+        .PUT { color: var(--red); }
+        .timer-box { font-size: 13px; color: var(--text-sub); margin-top: 10px; }
+
+        /* Win/Loss Buttons */
+        .trade-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .btn-win { background: var(--green); color: white; border: none; padding: 12px; border-radius: 12px; font-weight: bold; cursor: pointer; }
+        .btn-loss { background: var(--red); color: white; border: none; padding: 12px; border-radius: 12px; font-weight: bold; cursor: pointer; }
     </style>
 </head>
 <body>
-    <h2>AK Premium Bot Dashboard</h2>
-    <div class="card">
-        <label>Pair:</label>
-        <select id="pair">
-            <option value="EURUSD">EURUSD</option>
-            <option value="GBPUSD">GBPUSD</option>
-            <option value="USDJPY">USDJPY</option>
-            <option value="USDCAD">USDCAD</option>
-        </select>
-        <br>
-        <label>Timeframe:</label>
-        <select id="tf">
-            <option value="1m">1 Minute</option>
-            <option value="5m">5 Minutes</option>
-        </select>
-        <br>
-        <button onclick="getSignal()" style="background: #6366F1; color: white; cursor: pointer;">Get Signal</button>
-        <div id="result" class="signal">Select pair & click Get Signal</div>
+
+    <!-- WhatsApp Community Gate Lock -->
+    <div id="lock-screen">
+        <div class="lock-card">
+            <i class="fab fa-whatsapp"></i>
+            <h2>Community Access Locked</h2>
+            <p>Accessing <b>AK Premium Bot</b> requires joining our Official WhatsApp Community.</p>
+            <a href="https://chat.whatsapp.com/HOOyD7NhzWWIhAq4LRuJZt" target="_blank" class="btn-whatsapp" onclick="unlockCommunity()">
+                <i class="fab fa-whatsapp"></i> Join Community To Unlock
+            </a>
+        </div>
+    </div>
+
+    <!-- Main Dashboard -->
+    <div class="dashboard">
+        <div class="header">
+            <h1><i class="fas fa-robot" style="color: var(--accent);"></i> AK Premium Bot</h1>
+            <p>TradingView Live Market Analyzer v5.0</p>
+        </div>
+
+        <!-- Live Performance Tracker -->
+        <div class="stats-grid">
+            <div class="stat-box"><div class="val" id="total-trades" style="color:#3B82F6;">0</div><div class="lbl">Total</div></div>
+            <div class="stat-box"><div class="val" id="wins" style="color:var(--green);">0</div><div class="lbl">Wins</div></div>
+            <div class="stat-box"><div class="val" id="losses" style="color:var(--red);">0</div><div class="lbl">Losses</div></div>
+            <div class="stat-box"><div class="val" id="win-rate" style="color:#F59E0B;">0%</div><div class="lbl">Win Rate</div></div>
+        </div>
+
+        <!-- News Alert Banner -->
+        <div class="news-alert" id="news-box">
+            <i class="fas fa-newspaper"></i>
+            <span id="news-text">Checking market volatility & news impact...</span>
+        </div>
+
+        <!-- Controls -->
+        <div class="controls">
+            <div class="control-group">
+                <label>FOREX PAIR</label>
+                <select id="pair">
+                    <option value="EURUSD">EUR/USD (95% Acc)</option>
+                    <option value="GBPUSD">GBP/USD (92% Acc)</option>
+                    <option value="USDJPY">USD/JPY (90% Acc)</option>
+                    <option value="USDCAD">USD/CAD (89% Acc)</option>
+                    <option value="AUDUSD">AUD/USD (91% Acc)</option>
+                    <option value="NZDUSD">NZD/USD (87% Acc)</option>
+                    <option value="USDCHF">USD/CHF (88% Acc)</option>
+                    <option value="EURJPY">EUR/JPY (93% Acc)</option>
+                    <option value="GBPJPY">GBP/JPY (94% Acc)</option>
+                </select>
+            </div>
+            <div class="control-group">
+                <label>TIMEFRAME</label>
+                <select id="tf">
+                    <option value="1m">1 Minute</option>
+                    <option value="5m">5 Minutes</option>
+                </select>
+            </div>
+        </div>
+
+        <button class="btn-action" onclick="getSignal()">GET LIVE SIGNAL</button>
+
+        <!-- Signal Card -->
+        <div class="signal-card" id="signal-card">
+            <div class="accuracy-badge" id="acc-badge">Accuracy: --%</div>
+            <div class="signal-direction" id="signal-dir" style="color: var(--text-sub);">SELECT PAIR</div>
+            <div class="timer-box" id="timer-box">Next candle entry in: --s</div>
+        </div>
+
+        <!-- Result Marking -->
+        <div class="trade-buttons">
+            <button class="btn-win" onclick="recordTrade(true)"><i class="fas fa-check-circle"></i> WIN</button>
+            <button class="btn-loss" onclick="recordTrade(false)"><i class="fas fa-times-circle"></i> LOSS</button>
+        </div>
     </div>
 
     <script>
+        let total = 0, wins = 0, losses = 0;
+        let countdown = 0;
+        let timerInterval = null;
+
+        function unlockCommunity() {
+            setTimeout(() => {
+                localStorage.setItem("ak_bot_wa_unlock", "true");
+                document.getElementById("lock-screen").style.display = "none";
+            }, 1000);
+        }
+
+        if (localStorage.getItem("ak_bot_wa_unlock") === "true") {
+            document.getElementById("lock-screen").style.display = "none";
+        }
+
         async function getSignal() {
-            const pair = document.getElementById('pair').value;
-            const tf = document.getElementById('tf').value;
-            const resDiv = document.getElementById('result');
-            resDiv.innerText = "Loading signal...";
+            const pair = document.getElementById("pair").value;
+            const tf = document.getElementById("tf").value;
+            const dirEl = document.getElementById("signal-dir");
+            const accEl = document.getElementById("acc-badge");
             
-            // Fixed HTTPS Proxy & Endpoint parameters
-            const targetUrl = `https://akprimiumebot.pythonanywhere.com/signal?symbol=${pair}&interval=${tf}`;
+            dirEl.innerText = "ANALYZING...";
+            dirEl.className = "signal-direction";
             
             try {
-                const response = await fetch(targetUrl);
-                if (!response.ok) throw new Error("Network response was not ok");
-                
-                const data = await response.json();
+                const url = `https://akprimiumebot.pythonanywhere.com/signal?symbol=${pair}&interval=${tf}`;
+                const res = await fetch(url);
+                const data = await res.json();
+
                 if (data.direction) {
-                    resDiv.innerHTML = `<span class="${data.direction}">${data.direction}</span><br><small style="font-size:14px; color:#aaa;">Accuracy: ${data.accuracy}%</small>`;
+                    dirEl.innerText = data.direction;
+                    dirEl.className = `signal-direction ${data.direction}`;
+                    accEl.innerText = `Accuracy: ${data.accuracy}%`;
+
+                    if (data.is_volatile) {
+                        document.getElementById("news-text").innerText = "⚠️ High Market Volatility! Trade with caution.";
+                    } else {
+                        document.getElementById("news-text").innerText = "✅ Stable Market. Safe to execute trade.";
+                    }
+
+                    countdown = data.countdown_seconds || 59;
+                    startTimer();
                 } else {
-                    resDiv.innerText = "Failed to load signal data";
+                    dirEl.innerText = "RETRY";
                 }
             } catch (e) {
-                // Fallback attempt via proxy if HTTPS/CORS is strict on mobile
-                try {
-                    const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`;
-                    const proxyRes = await fetch(proxyUrl);
-                    const proxyData = await proxyRes.json();
-                    const data = JSON.parse(proxyData.contents);
-                    
-                    if (data.direction) {
-                        resDiv.innerHTML = `<span class="${data.direction}">${data.direction}</span><br><small style="font-size:14px; color:#aaa;">Accuracy: ${data.accuracy}%</small>`;
-                    } else {
-                        resDiv.innerText = "Failed to load signal data";
-                    }
-                } catch (err) {
-                    resDiv.innerText = "Error connecting to server";
-                }
+                dirEl.innerText = "SERVER ERROR";
             }
+        }
+
+        function startTimer() {
+            clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                if (countdown > 0) {
+                    document.getElementById("timer-box").innerText = `Next candle entry in: ${countdown--}s`;
+                } else {
+                    clearInterval(timerInterval);
+                    document.getElementById("timer-box").innerText = "⚡ TAKE ENTRY NOW!";
+                }
+            }, 1000);
+        }
+
+        function recordTrade(isWin) {
+            total++;
+            if (isWin) wins++; else losses++;
+            document.getElementById("total-trades").innerText = total;
+            document.getElementById("wins").innerText = wins;
+            document.getElementById("losses").innerText = losses;
+            document.getElementById("win-rate").innerText = `${Math.round((wins / total) * 100)}%`;
         }
     </script>
 </body>
