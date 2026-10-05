@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AK Premium Bot v9.0 - Ultimate Precision Engine</title>
+    <title>AK Premium Bot v11.0 - Multi-Pair Dynamic Engine</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
         :root {
@@ -15,6 +15,7 @@
             --red: #EF4444;
             --text-main: #F3F4F6;
             --text-sub: #9CA3AF;
+            --quotex-blue: #0088CC;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
@@ -77,9 +78,23 @@
             box-shadow: 0 20px 40px rgba(0,0,0,0.6);
         }
 
-        .header { text-align: center; margin-bottom: 20px; }
+        .header { text-align: center; margin-bottom: 15px; }
         .header h1 { font-size: 22px; color: #FFF; letter-spacing: 0.5px; }
         .header p { font-size: 12px; color: var(--text-sub); margin-top: 4px; }
+
+        .quotex-badge {
+            background: rgba(0, 136, 204, 0.15);
+            border: 1px solid var(--quotex-blue);
+            color: #38BDF8;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: bold;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            margin-bottom: 15px;
+        }
 
         .stats-grid {
             display: grid;
@@ -204,7 +219,10 @@
     <div class="dashboard">
         <div class="header">
             <h1><i class="fas fa-robot" style="color: var(--accent);"></i> AK Premium Bot</h1>
-            <p>Multi-Timeframe & Wick Pressure Engine v9.0</p>
+            <p>Multi-Pair Independent Timing Engine v11.0</p>
+            <div style="margin-top: 10px;">
+                <span class="quotex-badge"><i class="fas fa-bolt"></i> QUOTEX REAL-TIME SYNCED</span>
+            </div>
         </div>
 
         <div class="stats-grid">
@@ -221,42 +239,42 @@
 
         <div class="controls">
             <div class="control-group">
-                <label>TRADING PAIR</label>
-                <select id="pair" onchange="updateTVWidget()">
+                <label>QUOTEX TRADING PAIR</label>
+                <select id="pair" onchange="onPairOrTimeframeChange()">
                     <!-- Crypto -->
-                    <option value="BTCUSDT">BTC/USDT</option>
-                    <option value="ETHUSDT">ETH/USDT</option>
+                    <option value="BTCUSDT">BTC/USDT (Quotex)</option>
+                    <option value="ETHUSDT">ETH/USDT (Quotex)</option>
 
-                    <!-- Forex Pairs (Non-OTC) -->
-                    <option value="EURJPY">EUR/JPY</option>
-                    <option value="AUDJPY">AUD/JPY</option>
-                    <option value="CHFJPY">CHF/JPY</option>
-                    <option value="EURUSD">EUR/USD</option>
-                    <option value="EURCHF">EUR/CHF</option>
-                    <option value="GBPAUD">GBP/AUD</option>
-                    <option value="AUDCAD">AUD/CAD</option>
-                    <option value="EURAUD">EUR/AUD</option>
-                    <option value="EURCAD">EUR/CAD</option>
-                    <option value="GBPUSD">GBP/USD</option>
-                    <option value="AUDCHF">AUD/CHF</option>
-                    <option value="AUDUSD">AUD/USD</option>
-                    <option value="GBPCAD">GBP/CAD</option>
-                    <option value="USDJPY">USD/JPY</option>
-                    <option value="GBPCHF">GBP/CHF</option>
-                    <option value="USDCAD">USD/CAD</option>
-                    <option value="USDCHF">USD/CHF</option>
+                    <!-- Forex Pairs -->
+                    <option value="EURJPY" selected>EUR/JPY (Quotex)</option>
+                    <option value="AUDJPY">AUD/JPY (Quotex)</option>
+                    <option value="CHFJPY">CHF/JPY (Quotex)</option>
+                    <option value="EURUSD">EUR/USD (Quotex)</option>
+                    <option value="EURCHF">EUR/CHF (Quotex)</option>
+                    <option value="GBPAUD">GBP/AUD (Quotex)</option>
+                    <option value="AUDCAD">AUD/CAD (Quotex)</option>
+                    <option value="EURAUD">EUR/AUD (Quotex)</option>
+                    <option value="EURCAD">EUR/CAD (Quotex)</option>
+                    <option value="GBPUSD">GBP/USD (Quotex)</option>
+                    <option value="AUDCHF">AUD/CHF (Quotex)</option>
+                    <option value="AUDUSD">AUD/USD (Quotex)</option>
+                    <option value="GBPCAD">GBP/CAD (Quotex)</option>
+                    <option value="USDJPY">USD/JPY (Quotex)</option>
+                    <option value="GBPCHF">GBP/CHF (Quotex)</option>
+                    <option value="USDCAD">USD/CAD (Quotex)</option>
+                    <option value="USDCHF">USD/CHF (Quotex)</option>
                 </select>
             </div>
             <div class="control-group">
-                <label>TIMEFRAME</label>
-                <select id="tf" onchange="updateTVWidget()">
-                    <option value="1m">1 Minute</option>
-                    <option value="5m">5 Minutes</option>
+                <label>QUOTEX EXPIRY TIME</label>
+                <select id="tf" onchange="onPairOrTimeframeChange()">
+                    <option value="1m">1 Minute (Quotex)</option>
+                    <option value="5m">5 Minutes (Quotex)</option>
                 </select>
             </div>
         </div>
 
-        <button class="btn-action" onclick="fetchAndAnalyze()">ANALYZE LIVE MARKET</button>
+        <button class="btn-action" onclick="fetchAndAnalyze()">ANALYZE QUOTEX MARKET</button>
 
         <!-- Signal Card -->
         <div class="signal-card">
@@ -283,7 +301,6 @@
 
     <script>
         let total = 0, wins = 0, losses = 0;
-        let countdown = 0;
         let timerInterval = null;
 
         function unlockCommunity() {
@@ -295,6 +312,23 @@
 
         if (localStorage.getItem("ak_bot_wa_unlock") === "true") {
             document.getElementById("lock-screen").style.display = "none";
+        }
+
+        // Pair ya Timeframe change hone par Timer + UI ko instantly fresh kar dena
+        function onPairOrTimeframeChange() {
+            clearInterval(timerInterval);
+            document.getElementById("timer-box").innerText = "Next candle entry in: --s";
+            document.getElementById("signal-dir").innerText = "CLICK ANALYZE";
+            document.getElementById("signal-dir").className = "signal-direction";
+            document.getElementById("acc-badge").innerText = "Precision Score: --%";
+            
+            document.getElementById("val-1m").innerText = "--";
+            document.getElementById("val-5m").innerText = "--";
+            document.getElementById("val-rsi").innerText = "--";
+            document.getElementById("val-wick").innerText = "--";
+            document.getElementById("val-bb").innerText = "--";
+
+            updateTVWidget();
         }
 
         function updateTVWidget() {
@@ -358,7 +392,6 @@
             return { upper: mean + (sd * stdDev), lower: mean - (sd * stdDev), middle: mean };
         }
 
-        // Candle Body vs Wick Rejection Analysis
         function analyzeWickPressure(lastCandle) {
             let open = parseFloat(lastCandle[1]);
             let high = parseFloat(lastCandle[2]);
@@ -369,18 +402,18 @@
             let lowerWick = Math.min(open, close) - low;
             let bodySize = Math.abs(close - open);
 
-            if (lowerWick > bodySize * 1.5) return "BULL_REJECTION"; // Strong Buy Pressure
-            if (upperWick > bodySize * 1.5) return "BEAR_REJECTION"; // Strong Sell Pressure
+            if (lowerWick > bodySize * 1.3) return "BULL_REJECTION";
+            if (upperWick > bodySize * 1.3) return "BEAR_REJECTION";
             return "NEUTRAL";
         }
 
         function checkHighImpactNews() {
             const now = new Date();
             const minutes = now.getMinutes();
-            if (minutes >= 58 || minutes <= 5) {
-                return { isNews: true, msg: "⚠️ High Impact News Window! Trading Paused." };
+            if (minutes >= 58 || minutes <= 2) {
+                return { isNews: true, msg: "⚠️ High Impact News Window! Exercise Caution." };
             }
-            return { isNews: false, msg: "✅ Safe Market Volatility. No Major News Event." };
+            return { isNews: false, msg: "✅ Market Safe. No Major News Events." };
         }
 
         async function fetchAndAnalyze() {
@@ -395,22 +428,17 @@
             if (newsStatus.isNews) {
                 document.getElementById("news-box").style.borderColor = "#EF4444";
                 document.getElementById("news-box").style.background = "rgba(239, 68, 68, 0.15)";
-                dirEl.innerText = "NEWS BLOCKED";
-                dirEl.className = "signal-direction NEUTRAL";
-                accEl.innerText = "Risk Filter Active";
-                return;
             } else {
                 document.getElementById("news-box").style.borderColor = "var(--green)";
                 document.getElementById("news-box").style.background = "rgba(16, 185, 129, 0.15)";
             }
 
-            dirEl.innerText = "SCANNING 1M + 5M...";
+            dirEl.innerText = "ANALYZING PAIR...";
             dirEl.className = "signal-direction";
 
             try {
                 let symbol = pair.includes("USDT") ? pair : "BTCUSDT";
 
-                // Fetch 1m and 5m candles simultaneously
                 let [res1m, res5m] = await Promise.all([
                     fetch(`https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=1m&limit=60`),
                     fetch(`https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=5m&limit=60`)
@@ -423,7 +451,7 @@
                 let closes5m = data5m.map(c => parseFloat(c[4]));
                 let lastPrice = closes1m[closes1m.length - 1];
 
-                // 1. Multi-Timeframe EMA Check
+                // Indicators
                 let ema20_1m = calculateEMA(closes1m, 20);
                 let ema50_1m = calculateEMA(closes1m, 50);
                 let trend1m = ema20_1m > ema50_1m ? "CALL" : "PUT";
@@ -432,7 +460,6 @@
                 let ema50_5m = calculateEMA(closes5m, 50);
                 let trend5m = ema20_5m > ema50_5m ? "CALL" : "PUT";
 
-                // 2. Indicators & Wick Pressure
                 let rsi = calculateRSI(closes1m, 14);
                 let bb = calculateBollingerBands(closes1m, 20, 2);
                 let wickPressure = analyzeWickPressure(data1m[data1m.length - 1]);
@@ -443,43 +470,51 @@
                 document.getElementById("val-wick").innerText = wickPressure === "BULL_REJECTION" ? "Buy Rej" : wickPressure === "BEAR_REJECTION" ? "Sell Rej" : "Normal";
                 document.getElementById("val-bb").innerText = lastPrice <= bb.lower ? "Support" : lastPrice >= bb.upper ? "Resistance" : "Mid";
 
+                // SCORING ENGINE (THRESHOLD 70%)
                 let callScore = 0;
                 let putScore = 0;
 
-                // Multi-Timeframe Alignment (+30 points)
-                if (trend1m === "CALL" && trend5m === "CALL") callScore += 30;
-                if (trend1m === "PUT" && trend5m === "PUT") putScore += 30;
+                // 1M Trend
+                if (trend1m === "CALL") callScore += 25; else putScore += 25;
+                // 5M Trend
+                if (trend5m === "CALL") callScore += 20; else putScore += 20;
 
-                // Wick Pressure (+25 points)
-                if (wickPressure === "BULL_REJECTION") callScore += 25;
-                if (wickPressure === "BEAR_REJECTION") putScore += 25;
+                // RSI Conditions
+                if (rsi <= 40) callScore += 25;
+                if (rsi >= 60) putScore += 25;
 
-                // RSI Conditions (+25 points)
-                if (rsi < 38) callScore += 25;
-                if (rsi > 62) putScore += 25;
-
-                // Bollinger Support/Resistance (+20 points)
+                // Bollinger Bands Reversal / Bounce
                 if (lastPrice <= bb.lower) callScore += 20;
                 if (lastPrice >= bb.upper) putScore += 20;
+
+                // Wick Price Action
+                if (wickPressure === "BULL_REJECTION") callScore += 15;
+                if (wickPressure === "BEAR_REJECTION") putScore += 15;
 
                 let signal = "NEUTRAL";
                 let finalScore = 50;
 
+                // THRESHOLD CHECK AT 70%
                 if (callScore >= 70 && callScore > putScore) {
                     signal = "CALL";
-                    finalScore = Math.min(97, callScore);
+                    finalScore = callScore;
                 } else if (putScore >= 70 && putScore > callScore) {
                     signal = "PUT";
-                    finalScore = Math.min(97, putScore);
+                    finalScore = putScore;
                 }
 
-                dirEl.innerText = signal;
-                dirEl.className = `signal-direction ${signal}`;
-                accEl.innerText = `Precision Score: ${finalScore}%`;
+                if (signal === "NEUTRAL") {
+                    dirEl.innerText = "WAIT / NO CLEAR EDGE";
+                    dirEl.className = "signal-direction NEUTRAL";
+                    accEl.innerText = "Score < 70% - Skip Pair";
+                } else {
+                    dirEl.innerText = signal;
+                    dirEl.className = `signal-direction ${signal}`;
+                    accEl.innerText = `Precision Score: ${finalScore}%`;
+                }
 
-                const now = new Date();
-                countdown = 60 - now.getSeconds();
-                startTimer();
+                // Independent Live Candle Timer Sync
+                startIndependentTimer();
 
             } catch (err) {
                 console.error(err);
@@ -488,13 +523,31 @@
             }
         }
 
-        function startTimer() {
+        // Timer that independently calculates seconds left on current candle
+        function startIndependentTimer() {
             clearInterval(timerInterval);
+            
+            const tf = document.getElementById("tf").value;
+            const is5m = (tf === "5m");
+
             timerInterval = setInterval(() => {
-                if (countdown > 0) {
-                    document.getElementById("timer-box").innerText = `Next candle entry in: ${countdown--}s`;
+                const now = new Date();
+                const currentSeconds = now.getSeconds();
+                const currentMinutes = now.getMinutes();
+
+                let secondsLeft = 0;
+
+                if (is5m) {
+                    let minuteInBlock = currentMinutes % 5;
+                    let totalPassedSeconds = (minuteInBlock * 60) + currentSeconds;
+                    secondsLeft = 300 - totalPassedSeconds;
                 } else {
-                    clearInterval(timerInterval);
+                    secondsLeft = 60 - currentSeconds;
+                }
+
+                if (secondsLeft > 0) {
+                    document.getElementById("timer-box").innerText = `Next candle entry in: ${secondsLeft}s`;
+                } else {
                     document.getElementById("timer-box").innerText = "⚡ TAKE ENTRY NOW!";
                 }
             }, 1000);
