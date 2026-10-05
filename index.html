@@ -221,10 +221,28 @@
             <div class="control-group">
                 <label>TRADING PAIR</label>
                 <select id="pair" onchange="updateTVWidget()">
+                    <!-- Crypto -->
                     <option value="BTCUSDT">BTC/USDT</option>
                     <option value="ETHUSDT">ETH/USDT</option>
-                    <option value="EURUSD">EUR/USD (TV)</option>
-                    <option value="GBPUSD">GBP/USD (TV)</option>
+
+                    <!-- Forex Pairs (Non-OTC from Screenshots) -->
+                    <option value="EURJPY">EUR/JPY</option>
+                    <option value="AUDJPY">AUD/JPY</option>
+                    <option value="CHFJPY">CHF/JPY</option>
+                    <option value="EURUSD">EUR/USD</option>
+                    <option value="EURCHF">EUR/CHF</option>
+                    <option value="GBPAUD">GBP/AUD</option>
+                    <option value="AUDCAD">AUD/CAD</option>
+                    <option value="EURAUD">EUR/AUD</option>
+                    <option value="EURCAD">EUR/CAD</option>
+                    <option value="GBPUSD">GBP/USD</option>
+                    <option value="AUDCHF">AUD/CHF</option>
+                    <option value="AUDUSD">AUD/USD</option>
+                    <option value="GBPCAD">GBP/CAD</option>
+                    <option value="USDJPY">USD/JPY</option>
+                    <option value="GBPCHF">GBP/CHF</option>
+                    <option value="USDCAD">USD/CAD</option>
+                    <option value="USDCHF">USD/CHF</option>
                 </select>
             </div>
             <div class="control-group">
@@ -259,6 +277,7 @@
         </div>
     </div>
 
+    <!-- JAVASCRIPT YAHAN PE SHAMIL HAI -->
     <script>
         let total = 0, wins = 0, losses = 0;
         let countdown = 0;
@@ -281,7 +300,7 @@
             const container = document.getElementById('tv-widget-holder');
             container.innerHTML = '';
 
-            let symbol = pair === "BTCUSDT" ? "BINANCE:BTCUSDT" : pair === "ETHUSDT" ? "BINANCE:ETHUSDT" : `FX:${pair}`;
+            let symbol = pair.includes("USDT") ? `BINANCE:${pair}` : `FX:${pair}`;
 
             const script = document.createElement('script');
             script.type = 'text/javascript';
@@ -301,7 +320,6 @@
             container.appendChild(script);
         }
 
-        // Real Technical Calculation Functions
         function calculateRSI(closes, period = 14) {
             let gains = 0, losses = 0;
             for (let i = 1; i <= period; i++) {
@@ -344,7 +362,7 @@
             dirEl.className = "signal-direction";
 
             try {
-                let symbol = pair.includes("USDT") ? pair : "BTCUSDT"; // Default to BTCUSDT feed for real API if forex CORS blocks
+                let symbol = pair.includes("USDT") ? pair : "BTCUSDT";
                 let res = await fetch(`https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=${tf}&limit=60`);
                 let data = await res.json();
                 
@@ -362,10 +380,6 @@
                 let signal = "NEUTRAL";
                 let score = 50;
 
-                // Technical Rules:
-                // If RSI < 35 and Price > EMA20 -> CALL (Oversold Bounce)
-                // If RSI > 65 and Price < EMA20 -> PUT (Overbought Drop)
-                // Trend alignment via EMA 20 vs EMA 50
                 if (rsi < 40 && ema20 > ema50) {
                     signal = "CALL";
                     score = Math.min(95, Math.floor(75 + (40 - rsi) * 1.2));
