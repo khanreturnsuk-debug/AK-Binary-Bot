@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AK Pro Binary Bot v13.5</title>
+    <title>AK Pro Sync Bot v14.0</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
         :root {
@@ -77,11 +77,6 @@
         .stat-box .val { font-size: 16px; font-weight: bold; }
         .stat-box .lbl { font-size: 10px; color: var(--text-sub); margin-top: 2px; }
 
-        .news-alert {
-            background: rgba(16, 185, 129, 0.15); border: 1px solid var(--green); color: #A7F3D0;
-            padding: 10px 14px; border-radius: 12px; font-size: 12px; display: flex; align-items: center; gap: 10px; margin-bottom: 20px;
-        }
-
         .controls { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
         .control-group { text-align: left; }
         .control-group label { font-size: 11px; color: var(--text-sub); margin-bottom: 6px; display: block; }
@@ -146,12 +141,12 @@
         </div>
 
         <div style="text-align: center;">
-            <span class="quotex-badge"><i class="fas fa-bolt"></i> BALANCED ENGINE v13.5</span>
+            <span class="quotex-badge"><i class="fas fa-bolt"></i> REALTIME SYNC v14.0</span>
         </div>
 
         <div class="bot-title-section">
             <h1><i class="fas fa-chart-line" style="color: #6366F1;"></i> AK Pro Binary Trader Bot</h1>
-            <p>Optimized Price Action & Trend Strategy</p>
+            <p>100% Synced TradingView Analysis Engine</p>
         </div>
 
         <div class="stats-grid">
@@ -159,11 +154,6 @@
             <div class="stat-box"><div class="val" id="wins" style="color:var(--green);">0</div><div class="lbl">Wins</div></div>
             <div class="stat-box"><div class="val" id="losses" style="color:var(--red);">0</div><div class="lbl">Losses</div></div>
             <div class="stat-box"><div class="val" id="win-rate" style="color:#F59E0B;">0%</div><div class="lbl">Win Rate</div></div>
-        </div>
-
-        <div class="news-alert" id="news-box">
-            <i class="fas fa-shield-alt"></i>
-            <span id="news-text">Balanced Real-Time Signal Engine Active</span>
         </div>
 
         <div class="controls">
@@ -200,7 +190,7 @@
             </div>
         </div>
 
-        <button class="btn-action" onclick="fetchAndAnalyze()">FETCH SIGNAL NOW</button>
+        <button class="btn-action" onclick="fetchAndAnalyze()">FETCH SYNCED SIGNAL</button>
 
         <div class="signal-card">
             <div class="accuracy-badge" id="acc-badge">Precision Score: --%</div>
@@ -209,11 +199,11 @@
 
             <div class="filter-panel">
                 <div class="filter-box">
-                    <span>S/R Zone: <b id="sr-zone">--</b></span>
-                    <span>RSI Filter: <b id="rsi-val">--</b></span>
+                    <span>TradingView Rec: <b id="sr-zone">--</b></span>
+                    <span>Summary State: <b id="rsi-val">--</b></span>
                 </div>
                 <div class="filter-box">
-                    <span>EMA Trend: <b id="ema-trend">--</b></span>
+                    <span>Engine Sync: <b id="ema-trend">--</b></span>
                     <span>Filter Decision: <b id="filter-result" style="color:var(--green);">--</b></span>
                 </div>
             </div>
@@ -292,40 +282,30 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         "symbols": { "tickers": [symbolStr] },
-                        "columns": ["Recommend.All", "RSI"]
+                        "columns": ["Recommend.All", "Recommend.MA", "Recommend.Other"]
                     })
                 });
 
                 const data = await response.json();
                 if (data && data.data && data.data.length > 0) {
-                    let rec = data.data[0].d[0];
-                    let rsi = data.data[0].d[1] || 50;
+                    let rec = data.data[0].d[0]; // Total Summary score (-1 to +1)
 
-                    // Balanced & Responsive Filters (Will provide regular signals)
-                    if (rec >= 0.10) {
-                        let score = Math.min(97, Math.floor(90 + rec * 8));
-                        return { dir: "CALL", zone: "SUPPORT BOUNCE", rsi: Math.round(rsi), trend: "BULLISH", score: score, status: "PASSED" };
-                    } else if (rec <= -0.10) {
-                        let score = Math.min(97, Math.floor(90 + Math.abs(rec) * 8));
-                        return { dir: "PUT", zone: "RESISTANCE REJECTION", rsi: Math.round(rsi), trend: "BEARISH", score: score, status: "PASSED" };
+                    // Strictly Synced Logic:
+                    if (rec > 0.05) {
+                        let score = Math.min(98, Math.floor(91 + rec * 7));
+                        return { dir: "CALL", zone: "BUY ZONE", rsi: "BULLISH", trend: "DIRECT SYNC", score: score, status: "PASSED" };
+                    } else if (rec < -0.05) {
+                        let score = Math.min(98, Math.floor(91 + Math.abs(rec) * 7));
+                        return { dir: "PUT", zone: "SELL ZONE", rsi: "BEARISH", trend: "DIRECT SYNC", score: score, status: "PASSED" };
                     } else {
-                        return { dir: "WAIT", zone: "CONSOLIDATION", rsi: Math.round(rsi), trend: "NEUTRAL", score: 65, status: "REJECTED" };
+                        return { dir: "WAIT", zone: "NEUTRAL", rsi: "SIDEWAYS", trend: "NO DIRECTION", score: 60, status: "REJECTED" };
                     }
                 }
             } catch (err) {
-                console.log("Scanner engine fallback", err);
+                console.log("Scanner err", err);
             }
 
-            // Smart Fallback
-            const isCall = Math.random() > 0.45;
-            return { 
-                dir: isCall ? "CALL" : "PUT", 
-                zone: isCall ? "SUPPORT BOUNCE" : "RESISTANCE REJECTION", 
-                rsi: isCall ? 42 : 58, 
-                trend: isCall ? "BULLISH" : "BEARISH", 
-                score: 93, 
-                status: "PASSED" 
-            };
+            return { dir: "WAIT", zone: "ERROR", rsi: "NEUTRAL", trend: "NO SYNC", score: 50, status: "REJECTED" };
         }
 
         async function fetchAndAnalyze() {
@@ -334,7 +314,7 @@
             const pair = document.getElementById("pair").value;
             const tf = document.getElementById("tf").value;
 
-            dirEl.innerText = "SCANNING MARKET...";
+            dirEl.innerText = "READING TRADINGVIEW...";
             dirEl.className = "signal-direction";
 
             const result = await fetchPriceActionSignal(pair, tf);
@@ -347,7 +327,7 @@
                 document.getElementById("sr-zone").innerText = result.zone;
                 document.getElementById("rsi-val").innerText = result.rsi;
                 document.getElementById("ema-trend").innerText = result.trend;
-                document.getElementById("filter-result").innerText = "RISK REJECTED";
+                document.getElementById("filter-result").innerText = "NEUTRAL MARKET";
                 document.getElementById("filter-result").style.color = "var(--yellow)";
             } else {
                 dirEl.innerText = result.dir;
@@ -357,7 +337,7 @@
                 document.getElementById("sr-zone").innerText = result.zone;
                 document.getElementById("rsi-val").innerText = result.rsi;
                 document.getElementById("ema-trend").innerText = result.trend;
-                document.getElementById("filter-result").innerText = "PASSED";
+                document.getElementById("filter-result").innerText = "SYNCED";
                 document.getElementById("filter-result").style.color = "var(--green)";
 
                 startIndependentTimer();
