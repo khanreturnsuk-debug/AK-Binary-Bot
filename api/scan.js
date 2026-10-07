@@ -1,5 +1,4 @@
 export default async function handler(req, res) {
-    // CORS Headers
     res.setHeader('Access-Control-Allow-Credentials', true);
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
@@ -12,62 +11,79 @@ export default async function handler(req, res) {
         return res.status(200).end();
     }
 
-    // Key Vercel Environment Variable se fetch hogi
-    const API_KEY = process.env.GEMINI_API_KEY;
-
     try {
         const body = req.body || {};
-        const pair = (body.pair || body.ticker || 'EURUSD').toUpperCase();
-        const tf = body.timeframe || '1m';
+        const rawPair = (body.pair || body.ticker || 'EURUSD').toUpperCase();
+        // Clean pair format for TradingView (e.g. USD/JPY -> USDJPY)
+        const cleanPair = rawPair.replace(/[^A-Z0-9]/g, '');
 
-        const promptText = `You are a professional binary options trading AI bot.
-Analyze current market state for currency pair ${pair} on ${tf} timeframe.
-Return ONLY a valid JSON object without any Markdown or extra text:
-{
-  "dir": "CALL",
-  "score": 93,
-  "ema": "BULLISH",
-  "rsi": "58 (BULLISH)",
-  "vol": "HIGH VOLUME",
-  "status": "STRONG BUY CONFIRMED"
-}
-Rules:
-- "dir" must be "CALL", "PUT", or "WAIT".
-- "score" must be a number between 85 and 98.`;
-
-        const response = await fetch(
-            `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`,
-            {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    contents: [{ parts: [{ text: promptText }] }]
-                })
-            }
-        );
-
-        const data = await response.json();
-
-        if (data.candidates && data.candidates[0]?.content?.parts[0]?.text) {
-            const rawText = data.candidates[0].content.parts[0].text;
-            const cleanJson = rawText.replace(/```json/g, '').replace(/```/g, '').trim();
-            const aiResponse = JSON.parse(cleanJson);
-            return res.status(200).json(aiResponse);
-        } else {
-            throw new Error("Gemini AI invalid response structure");
+        let symbol = `FX_IDC:${cleanPair}`;
+        if (cleanPair.includes("USDT") || cleanPair.includes("BTC") || cleanPair.includes("ETH")) {
+            symbol = `BINANCE:${cleanPair}`;
         }
 
-    } catch (error) {
-        console.error("AI Error:", error);
+        const tvQuery = {
+            symbols: { tickers: [symbol], query: { types: [] } },
+            columns: ["RSI", "EMA9", "EMA21", "Recommend.All", "volume"]
+        };
 
-        const isCall = Math.random() > 0.5;
+        let tvResponse = await fetch(`https://scanner.tradingview.com/forex/scan`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(tvQuery)
+        });
+        let tvData = await tvResponse.json();
+
+        if (!tvData.data || tvData.data.length === 0) {
+            tvResponse = await fetch(`https://scanner.tradingview.com/crypto/scan`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(tvQuery)
+            });
+            tvData = await tvResponse.json();
+        }
+
+        if (tvData.data && tvData.data.length > 0) {
+            const indicators = tvData.data[0].d;
+            const rsiVal = indicators[0] ? Math.round(indicators[0]) : 50;
+            const ema9 = indicators[1];
+            const ema21 = indicators[2];
+            const recAll = indicators[3]; // -1 to 1
+
+            let direction = "WAIT";
+            let statusText = "NEUTRAL MARKET";
+
+            if (recAll > 0.1 || (ema9 > ema21 && rsiVal > 50)) {
+                direction = "CALL";
+                statusText = "BULLISH MOMENTUM";
+            } else if (recAll < -0.1 || (ema9 < ema21 && rsiVal < 50)) {
+                direction = "PUT";
+                statusText = "BEARISH MOMENTUM";
+            }
+
+            const confidence = Math.min(Math.floor(75 + Math.abs(recAll) * 20), 98);
+
+            return res.status(200).json({
+                dir: direction,
+                score: confidence,
+                ema: ema9 > ema21 ? "BULLISH" : "BEARISH",
+                rsi: `${rsiVal} (${rsiVal > 50 ? "BULLISH" : "BEARISH"})`,
+                vol: "HIGH VOLUME",
+                status: statusText
+            });
+        }
+
+        throw new Error("No TradingView data found");
+
+    } catch (error) {
+        console.error("Scanner Error:", error);
         return res.status(200).json({
-            dir: isCall ? "CALL" : "PUT",
-            score: Math.floor(Math.random() * (96 - 86 + 1)) + 86,
-            ema: isCall ? "BULLISH" : "BEARISH",
-            rsi: isCall ? "56 (BULLISH)" : "42 (BEARISH)",
-            vol: "NORMAL VOLUME",
-            status: "ANALYSIS COMPLETED"
+            dir: "WAIT",
+            score: 50,
+            ema: "NEUTRAL",
+            rsi: "50 (NEUTRAL)",
+            vol: "NORMAL",
+            status: "MARKET SCANNING..."
         });
     }
 }
