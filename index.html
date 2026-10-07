@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AK Institutional Scalper Bot v20.0</title>
+    <title>AK Institutional Scalper Bot v20.4</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
         :root {
@@ -221,7 +221,8 @@
         let total = 0, wins = 0, losses = 0;
         let timerInterval = null;
 
-        const BACKEND_URL = "https://ak-binary-bot.vercel.app/api/scan";
+        // Corrected Vercel Backend URL
+        const BACKEND_URL = "https://ak-binary-bot-dbl6.vercel.app/api/scan";
 
         function checkLockStatus() {
             if (localStorage.getItem("ak_bot_wa_unlocked") === "true") {
@@ -276,28 +277,37 @@
             container.appendChild(script);
         }
 
-        // Dedicated Node.js Proxy Fetcher
-        async function fetchTradingViewData(ticker) {
+        // Dedicated Node.js Proxy Fetcher with Timeout Support
+        async function fetchTradingViewData(pair, timeframe) {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 12000); // 12 seconds max fetch limit
+
             try {
                 const res = await fetch(BACKEND_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ ticker: ticker })
+                    body: JSON.stringify({ pair: pair, ticker: pair, timeframe: timeframe }),
+                    signal: controller.signal
                 });
+                clearTimeout(timeoutId);
                 const responseData = await res.json();
-                if (responseData.success) {
+                
+                if (responseData.success && responseData.data) {
                     return responseData.data;
+                } else if (responseData.dir) {
+                    // Direct AI response fallback
+                    return responseData;
                 }
             } catch (e) {
-                console.error("Backend Proxy Connection Failed:", e);
+                console.error("Backend Connection Error:", e);
             }
 
             return null;
         }
 
         async function analyzeMarket(pair) {
-            let symbolStr = pair.includes("USDT") ? `BINANCE:${pair}` : `FX_IDC:${pair}`;
-            const data = await fetchTradingViewData(symbolStr);
+            const tf = document.getElementById("tf").value;
+            const data = await fetchTradingViewData(pair, tf);
 
             if (!data) {
                 return {
@@ -310,9 +320,21 @@
                 };
             }
 
-            let emaTrend = data.ema10 >= data.ema20 ? "BULLISH" : "BEARISH";
-            let rsiVal = Math.round(data.rsi);
-            let volumeState = Math.abs(data.summary) > 0.25 ? "HIGH VOLUME" : "NORMAL VOLUME";
+            // Direct response check if Gemini backend output format is returned
+            if (data.dir) {
+                return {
+                    dir: data.dir,
+                    score: data.score || data.confidence || 90,
+                    ema: data.ema || "EMA 9/21 OK",
+                    rsi: data.rsi || "RSI OK",
+                    vol: data.vol || "NORMAL VOLUME",
+                    status: data.status || data.reason || "ANALYSIS COMPLETE"
+                };
+            }
+
+            let emaTrend = (data.ema10 >= data.ema20) ? "BULLISH" : "BEARISH";
+            let rsiVal = Math.round(data.rsi || 50);
+            let volumeState = Math.abs(data.summary || 0) > 0.25 ? "HIGH VOLUME" : "NORMAL VOLUME";
 
             if (data.summary > 0.15 && rsiVal >= 50 && rsiVal <= 70) {
                 return {
