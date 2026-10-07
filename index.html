@@ -221,8 +221,7 @@
         let total = 0, wins = 0, losses = 0;
         let timerInterval = null;
 
-        // Replace with your Node.js backend server URL (e.g. Render, Railway, or http://localhost:3000)
-        const BACKEND_URL = "http://localhost:3000/api/scan";
+        const BACKEND_URL = "https://khanreturnsuk-debug.vercel.app/api/scan";
 
         function checkLockStatus() {
             if (localStorage.getItem("ak_bot_wa_unlocked") === "true") {
