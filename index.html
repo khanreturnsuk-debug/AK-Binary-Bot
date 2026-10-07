@@ -277,10 +277,10 @@
             container.appendChild(script);
         }
 
-        // Dedicated Node.js Proxy Fetcher with Timeout Support
+        // Dedicated Node.js Proxy Fetcher with 25s Timeout Limit
         async function fetchTradingViewData(pair, timeframe) {
             const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 12000); // 12 seconds max fetch limit
+            const timeoutId = setTimeout(() => controller.abort(), 25000); // Increased timeout to 25s
 
             try {
                 const res = await fetch(BACKEND_URL, {
