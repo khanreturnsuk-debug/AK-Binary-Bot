@@ -221,6 +221,9 @@
         let total = 0, wins = 0, losses = 0;
         let timerInterval = null;
 
+        // Replace with your Node.js backend server URL (e.g. Render, Railway, or http://localhost:3000)
+        const BACKEND_URL = "http://localhost:3000/api/scan";
+
         function checkLockStatus() {
             if (localStorage.getItem("ak_bot_wa_unlocked") === "true") {
                 const lockElem = document.getElementById("lock-screen");
@@ -274,30 +277,22 @@
             container.appendChild(script);
         }
 
+        // Dedicated Node.js Proxy Fetcher
         async function fetchTradingViewData(ticker) {
             try {
-                const response = await fetch('https://scanner.tradingview.com/forex/scan', {
+                const res = await fetch(BACKEND_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        "symbols": { "tickers": [ticker] },
-                        "columns": ["Recommend.All", "RSI", "EMA10", "EMA20", "Recommend.Other"]
-                    })
+                    body: JSON.stringify({ ticker: ticker })
                 });
-                const data = await response.json();
-                if (data && data.data && data.data.length > 0) {
-                    let d = data.data[0].d;
-                    return {
-                        summary: d[0] || 0,
-                        rsi: d[1] || 50,
-                        ema10: d[2] || 0,
-                        ema20: d[3] || 0,
-                        osculators: d[4] || 0
-                    };
+                const responseData = await res.json();
+                if (responseData.success) {
+                    return responseData.data;
                 }
-            } catch (err) {
-                console.log("Scanner API error", err);
+            } catch (e) {
+                console.error("Backend Proxy Connection Failed:", e);
             }
+
             return null;
         }
 
@@ -306,37 +301,43 @@
             const data = await fetchTradingViewData(symbolStr);
 
             if (!data) {
-                return { dir: "WAIT", score: 50, ema: "N/A", rsi: "N/A", vol: "N/A", status: "SERVER TIMEOUT" };
+                return {
+                    dir: "WAIT",
+                    score: 0,
+                    ema: "N/A",
+                    rsi: "N/A",
+                    vol: "N/A",
+                    status: "SERVER TIMEOUT"
+                };
             }
 
-            let emaTrend = data.ema10 > data.ema20 ? "BULLISH" : "BEARISH";
+            let emaTrend = data.ema10 >= data.ema20 ? "BULLISH" : "BEARISH";
             let rsiVal = Math.round(data.rsi);
-            let volumeState = Math.abs(data.summary) > 0.3 ? "HIGH VOLUME" : "LOW VOLUME";
+            let volumeState = Math.abs(data.summary) > 0.25 ? "HIGH VOLUME" : "NORMAL VOLUME";
 
-            // High Probability Trading Engine Rules
-            if (data.summary > 0.25 && rsiVal > 52 && rsiVal < 68) {
+            if (data.summary > 0.15 && rsiVal >= 50 && rsiVal <= 70) {
                 return {
                     dir: "CALL",
-                    score: Math.min(96, Math.floor(88 + data.summary * 10)),
+                    score: Math.min(97, Math.floor(88 + Math.abs(data.summary) * 12)),
                     ema: emaTrend,
                     rsi: `${rsiVal} (BULLISH)`,
                     vol: volumeState,
                     status: "STRONG BUY CONFIRMED"
                 };
-            } else if (data.summary < -0.25 && rsiVal < 48 && rsiVal > 32) {
+            } else if (data.summary < -0.15 && rsiVal <= 50 && rsiVal >= 30) {
                 return {
                     dir: "PUT",
-                    score: Math.min(96, Math.floor(88 + Math.abs(data.summary) * 10)),
+                    score: Math.min(97, Math.floor(88 + Math.abs(data.summary) * 12)),
                     ema: emaTrend,
                     rsi: `${rsiVal} (BEARISH)`,
                     vol: volumeState,
                     status: "STRONG SELL CONFIRMED"
                 };
             } else {
-                let reason = rsiVal >= 68 ? "OVERBOUGHT (RISKY)" : (rsiVal <= 32 ? "OVERSOLD (RISKY)" : "NO CLEAR DIRECTION");
+                let reason = rsiVal > 70 ? "OVERBOUGHT ZONE" : (rsiVal < 30 ? "OVERSOLD ZONE" : "CONSOLIDATION ZONE");
                 return {
                     dir: "WAIT",
-                    score: 95,
+                    score: 92,
                     ema: emaTrend,
                     rsi: `${rsiVal} (SIDEWAYS)`,
                     vol: volumeState,
@@ -360,7 +361,7 @@
             document.getElementById("vol-val").innerText = result.vol;
 
             if (result.dir === "WAIT") {
-                dirEl.innerText = "WAIT (NO TRADE)";
+                dirEl.innerText = result.status === "SERVER TIMEOUT" ? "SERVER TIMEOUT" : "WAIT (NO TRADE)";
                 dirEl.className = "signal-direction WAIT";
                 accEl.innerText = `Safety Score: ${result.score}%`;
                 document.getElementById("filter-result").innerText = result.status;
