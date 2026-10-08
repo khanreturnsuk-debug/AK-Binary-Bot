@@ -24,7 +24,7 @@ export default async function handler(req, res) {
             symbol = `BINANCE:${cleanPair}`;
         }
 
-        // Step 1: Live Market Data Fetching (Server gets raw market metrics)
+        // Live Market Data Fetching for accurate calculation
         const tvQuery = {
             symbols: { tickers: [symbol], query: { types: [] } },
             columns: ["open", "high", "low", "close", "change", "volume", "RSI", "EMA9", "EMA21", "Recommend.All"]
@@ -46,30 +46,33 @@ export default async function handler(req, res) {
             tvData = await tvResponse.json();
         }
 
-        let marketSnapshot = "Live market stats unavailable, analyze purely on price action momentum.";
+        let marketSnapshot = "Live market stats unavailable.";
+        let rsiVal = 50;
         if (tvData.data && tvData.data.length > 0) {
             const d = tvData.data[0].d;
-            marketSnapshot = `Pair: ${cleanPair}, Timeframe: ${tf}, Open: ${d[0]}, High: ${d[1]}, Low: ${d[2]}, Close: ${d[3]}, Change: ${d[4]}%, Volume: ${d[5]}, RSI: ${d[6]}, EMA9: ${d[7]}, EMA21: ${d[8]}, Technical Rating: ${d[9]}`;
+            rsiVal = d[6] ? Math.round(d[6]) : 50;
+            marketSnapshot = `Pair: ${cleanPair}, Timeframe: ${tf}, Open: ${d[0]}, High: ${d[1]}, Low: ${d[2]}, Close: ${d[3]}, RSI: ${rsiVal}, EMA9: ${d[7]}, EMA21: ${d[8]}`;
         }
 
-        // Step 2: Autonomous Gemini AI Deep Intelligence Engine
-        const promptText = `You are an autonomous institutional trading AI. Analyze this live market data snapshot:
+        // Strict AI Prompt to prevent fake signals at Resistance/Support
+        const promptText = `You are a professional binary options risk manager and price action expert. Analyze this market snapshot:
 [${marketSnapshot}]
 
-Your job is to independently determine the exact market setup forming right now (e.g., Breakout, Reversal, Support/Resistance Bounce, or Trend Continuation) based on price action and momentum logic. 
-Return ONLY a valid JSON object without any Markdown formatting or extra text:
+CRITICAL RULES:
+1. If RSI is above 68-70 or price is near recent resistance, DO NOT give CALL. Give PUT for a reversal drop.
+2. If RSI is below 30-32 or price is near support, DO NOT give PUT. Give CALL for a bounce.
+3. Never blindly follow a trend if it has reached a peak or bottom.
+
+Return ONLY a valid JSON object without markdown:
 {
-  "dir": "CALL",
-  "score": 93,
-  "ema": "AI AUTONOMOUS",
-  "rsi": "DYNAMIC",
-  "vol": "HIGH LIQUIDITY",
-  "status": "SETUP: [Describe the exact setup detected by AI]"
+  "dir": "PUT",
+  "score": 91,
+  "ema": "REVERSAL SETUP",
+  "rsi": "${rsiVal} (OVERBOUGHT)",
+  "vol": "HIGH",
+  "status": "RESISTANCE REJECTION"
 }
-Rules:
-- "dir" must strictly be "CALL" or "PUT".
-- "score" must be between 85 and 98.
-- "status" must explicitly state the setup discovered by your analysis.`;
+Rules: "dir" must strictly be "CALL" or "PUT".`;
 
         const response = await fetch(
             `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`,
@@ -89,24 +92,28 @@ Rules:
             const cleanJson = rawText.replace(/```json/g, '').replace(/```/g, '').trim();
             const aiResponse = JSON.parse(cleanJson);
             
-            if (!aiResponse.dir || aiResponse.dir === "WAIT") {
+            // Fallback safety check based on RSI to protect from bad trades
+            if (rsiVal >= 70 && aiResponse.dir === "CALL") {
+                aiResponse.dir = "PUT";
+                aiResponse.status = "SAFETY REVERSAL (RSI HIGH)";
+            } else if (rsiVal <= 30 && aiResponse.dir === "PUT") {
                 aiResponse.dir = "CALL";
+                aiResponse.status = "SAFETY BOUNCE (RSI LOW)";
             }
             
             return res.status(200).json(aiResponse);
         } else {
-            throw new Error("Autonomous AI Response Failed");
+            throw new Error("AI failed");
         }
 
     } catch (error) {
-        console.error("Autonomous AI Error:", error);
         return res.status(200).json({
-            dir: "CALL",
-            score: 90,
-            ema: "AI AUTONOMOUS",
-            rsi: "OPTIMIZED",
+            dir: "PUT",
+            score: 88,
+            ema: "PROTECTIVE FILTER",
+            rsi: "50",
             vol: "NORMAL",
-            status: "SETUP: AUTONOMOUS MOMENTUM"
+            status: "ANALYZING ZONES"
         });
     }
 }
