@@ -802,13 +802,14 @@ Return ONLY valid JSON:
 
     try {
       const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`,
         {
           method: "POST",
 
           headers: {
             "Content-Type":
-              "application/json"
+              "application/json",
+            "x-goog-api-key": GEMINI_API_KEY
           },
 
           body: JSON.stringify({
