@@ -634,7 +634,10 @@ select:focus{
 /* ================= MOBILE ================= */
 
 @media(max-width:380px){
-  body{padding:9px}
+
+  body{
+    padding:9px;
+  }
 
   .dashboard{
     padding:10px;
@@ -652,6 +655,7 @@ select:focus{
   .signal-direction{
     font-size:31px;
   }
+
 }
 </style>
 </head>
@@ -700,10 +704,12 @@ select:focus{
 
   <!-- Banner -->
   <div class="banner-container">
+
     <img
       src="IMG-20261005-WA3898.jpg"
       alt="AK Premium Bot"
     >
+
   </div>
 
 
@@ -724,10 +730,12 @@ select:focus{
 
   <!-- Version -->
   <div class="version-wrap">
+
     <span class="version-badge">
       <i class="fas fa-microchip"></i>
       AK INSTITUTIONAL SCALPER v22.0
     </span>
+
   </div>
 
 
@@ -826,11 +834,17 @@ select:focus{
   </div>
 
 
-  <!-- Scan -->
-  <button class="scan-btn" id="scan-btn">
+  <!-- Manual Scan Only -->
+  <button
+    class="scan-btn"
+    id="scan-btn"
+  >
 
     <i class="fas fa-radar"></i>
-    <span id="scan-text">SCAN MARKET</span>
+
+    <span id="scan-text">
+      SCAN MARKET
+    </span>
 
   </button>
 
@@ -840,11 +854,17 @@ select:focus{
 
     <div class="signal-top">
 
-      <span class="pill live" id="feed-pill">
+      <span
+        class="pill live"
+        id="feed-pill"
+      >
         FEED: --
       </span>
 
-      <span class="pill" id="bias-pill">
+      <span
+        class="pill"
+        id="bias-pill"
+      >
         MTF: --
       </span>
 
@@ -931,6 +951,7 @@ select:focus{
       MARKET DATA
     </div>
 
+
     <div class="grid">
 
       <div class="metric">
@@ -965,7 +986,7 @@ select:focus{
       class="status"
       id="filter-result"
     >
-      Waiting for market scan...
+      Ready. Press SCAN MARKET to analyze.
     </div>
 
   </div>
@@ -1015,7 +1036,14 @@ select:focus{
 
 /* =========================================================
    AK INSTITUTIONAL SCALPER v22.0
-   Frontend compatible with new api/scan.js
+
+   IMPORTANT:
+   AUTO SCAN REMOVED.
+
+   API will ONLY be called when the user manually
+   presses the "SCAN MARKET" button.
+
+   Changing pair/timeframe does NOT call the API.
 ========================================================= */
 
 
@@ -1029,7 +1057,6 @@ let wins = 0;
 let losses = 0;
 
 let timerInterval = null;
-let autoScanInterval = null;
 
 let isScanning = false;
 
@@ -1065,8 +1092,6 @@ $("unlock-btn").addEventListener("click",()=>{
   );
 
   $("lock-screen").style.display = "none";
-
-  setTimeout(fetchAndAnalyze,500);
 
 });
 
@@ -1148,7 +1173,7 @@ function resetUI(){
     "MTF: --";
 
   $("filter-result").innerText =
-    "Waiting for market scan...";
+    "Ready. Press SCAN MARKET to analyze.";
 
   $("filter-result").style.color =
     "#b9c3d0";
@@ -1543,7 +1568,7 @@ function renderSignal(data){
 }
 
 
-/* ================= MAIN SCAN ================= */
+/* ================= MANUAL SCAN ONLY ================= */
 
 async function fetchAndAnalyze(){
 
@@ -1570,11 +1595,13 @@ async function fetchAndAnalyze(){
   scanText.innerText =
     "ANALYZING...";
 
+
   $("signal-dir").className =
     "signal-direction";
 
   $("signal-dir").innerText =
     "SCANNING";
+
 
   $("filter-result").innerText =
     "Fetching closed candles + technical confirmation + MTF analysis...";
@@ -1632,53 +1659,15 @@ async function fetchAndAnalyze(){
 }
 
 
-/* ================= AUTO SCAN ================= */
-
-function startAutoScan(){
-
-  clearInterval(autoScanInterval);
-
-  const tf =
-    $("tf").value;
-
-
-  /*
-    1m:
-    scan once per minute
-
-    5m:
-    scan every 2 minutes
-
-    This avoids hammering the Gemini/API
-    unnecessarily.
-  */
-
-  const interval =
-    tf === "5m"
-      ? 120000
-      : 60000;
-
-
-  autoScanInterval =
-    setInterval(
-      ()=>{
-
-        if(
-          document.visibilityState === "visible"
-        ){
-
-          fetchAndAnalyze();
-
-        }
-
-      },
-      interval
-    );
-
-}
-
-
 /* ================= CHANGE HANDLERS ================= */
+
+/*
+  IMPORTANT:
+  Pair/timeframe change ONLY updates the UI and
+  TradingView chart.
+
+  NO API SCAN happens here.
+*/
 
 $("pair").addEventListener(
   "change",
@@ -1687,11 +1676,6 @@ $("pair").addEventListener(
     resetUI();
 
     updateTVWidget();
-
-    setTimeout(
-      fetchAndAnalyze,
-      400
-    );
 
   }
 );
@@ -1705,18 +1689,11 @@ $("tf").addEventListener(
 
     updateTVWidget();
 
-    startAutoScan();
-
-    setTimeout(
-      fetchAndAnalyze,
-      400
-    );
-
   }
 );
 
 
-/* ================= SCAN BUTTON ================= */
+/* ================= MANUAL SCAN BUTTON ================= */
 
 $("scan-btn").addEventListener(
   "click",
@@ -1840,16 +1817,11 @@ window.addEventListener(
 
     updateTVWidget();
 
-    startAutoScan();
-
     /*
-      Initial scan after UI loads.
+      NO INITIAL API SCAN.
+      API will only run after pressing
+      SCAN MARKET manually.
     */
-
-    setTimeout(
-      fetchAndAnalyze,
-      900
-    );
 
   }
 );
