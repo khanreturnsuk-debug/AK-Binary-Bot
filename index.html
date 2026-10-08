@@ -1,445 +1,344 @@
 <!DOCTYPE html>
-<html lang="ur">
+<html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AK Institutional Scalper Bot v20.4</title>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <style>
-        :root {
-            --bg-color: #0B0E14;
-            --card-bg: #151A23;
-            --accent: #6366F1;
-            --accent-glow: rgba(99, 102, 241, 0.4);
-            --green: #10B981;
-            --red: #EF4444;
-            --yellow: #F59E0B;
-            --text-main: #F3F4F6;
-            --text-sub: #9CA3AF;
-            --quotex-blue: #0088CC;
-        }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AK Pro Candle Scalper v21.0</title>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
 
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        body { background-color: var(--bg-color); color: var(--text-main); display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 15px; }
+<style>
+:root{
+ --bg:#070a10;--card:#10151f;--card2:#0b1018;--line:rgba(255,255,255,.08);
+ --text:#f5f7fb;--muted:#8d98a8;--blue:#6366f1;--cyan:#38bdf8;
+ --green:#10b981;--red:#ef4444;--yellow:#f59e0b;
+}
+*{box-sizing:border-box;font-family:Inter,Segoe UI,Tahoma,sans-serif}
+body{margin:0;min-height:100vh;background:radial-gradient(circle at top,#151b2b 0,#070a10 48%,#05070b 100%);color:var(--text);padding:16px}
+button,select{font:inherit}
+#lock-screen{position:fixed;inset:0;background:rgba(3,6,10,.96);backdrop-filter:blur(14px);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px}
+.lock-card{width:min(420px,100%);background:linear-gradient(145deg,#141b27,#0b1018);border:1px solid var(--line);border-radius:24px;padding:32px;text-align:center;box-shadow:0 25px 80px #000}
+.lock-card i{font-size:58px;color:#25d366;margin-bottom:15px}
+.lock-card h2{margin:0 0 10px;font-size:23px}
+.lock-card p{color:var(--muted);line-height:1.6;font-size:14px;margin-bottom:24px}
+.btn-whatsapp{display:flex;justify-content:center;align-items:center;gap:9px;background:#25d366;color:#fff;text-decoration:none;padding:14px;border-radius:13px;font-weight:800}
 
-        #lock-screen {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(11, 14, 20, 0.96); backdrop-filter: blur(12px);
-            z-index: 9999; display: flex; justify-content: center; align-items: center; padding: 20px;
-        }
+.dashboard{width:min(500px,100%);margin:auto;background:rgba(15,20,29,.96);border:1px solid var(--line);border-radius:26px;padding:16px;box-shadow:0 25px 70px rgba(0,0,0,.55)}
+.banner-container{border-radius:18px;overflow:hidden;border:1px solid var(--line);background:#000;margin-bottom:14px}
+.banner-container img{width:100%;display:block;object-fit:contain}
 
-        .lock-card {
-            background: var(--card-bg); border: 1px solid rgba(255, 255, 255, 0.1);
-            padding: 30px; border-radius: 20px; text-align: center; max-width: 420px; width: 100%;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-        }
+.version-badge{display:inline-flex;align-items:center;gap:7px;padding:7px 12px;border-radius:999px;border:1px solid rgba(56,189,248,.35);background:rgba(56,189,248,.08);color:#67d3ff;font-size:10px;font-weight:900;letter-spacing:.5px}
+.title{text-align:center;padding:13px 0 17px}
+.title h1{font-size:21px;margin:8px 0 4px;font-weight:900}
+.title p{margin:0;color:var(--muted);font-size:11px}
 
-        .lock-card i { font-size: 55px; color: #25D366; margin-bottom: 15px; }
-        .lock-card h2 { margin-bottom: 10px; font-size: 22px; color: #FFF; }
-        .lock-card p { color: var(--text-sub); font-size: 14px; margin-bottom: 25px; line-height: 1.5; }
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-bottom:14px}
+.stat{background:var(--card2);border:1px solid var(--line);border-radius:14px;padding:11px 5px;text-align:center}
+.stat b{display:block;font-size:16px}.stat span{font-size:9px;color:var(--muted);text-transform:uppercase}
 
-        .btn-whatsapp {
-            background: #25D366; color: white; border: none; padding: 14px 20px;
-            border-radius: 12px; font-size: 16px; font-weight: bold; width: 100%; cursor: pointer;
-            display: flex; align-items: center; justify-content: center; gap: 10px;
-            box-shadow: 0 4px 15px rgba(37, 211, 102, 0.3); text-decoration: none;
-        }
+.controls{display:grid;grid-template-columns:1.25fr .75fr;gap:9px;margin-bottom:10px}
+label{display:block;color:var(--muted);font-size:9px;font-weight:800;margin:0 0 5px 3px;letter-spacing:.6px}
+select{width:100%;background:#080c13;color:#fff;border:1px solid var(--line);border-radius:12px;padding:12px 10px;outline:none;font-size:12px}
 
-        .dashboard {
-            width: 100%; max-width: 480px; background: var(--card-bg);
-            border-radius: 24px; border: 1px solid rgba(255, 255, 255, 0.08); padding: 20px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.6);
-        }
+.scan-btn{width:100%;border:0;border-radius:14px;padding:14px;background:linear-gradient(135deg,#6366f1,#4338ca);color:white;font-weight:900;letter-spacing:.4px;box-shadow:0 8px 25px rgba(99,102,241,.25);cursor:pointer;margin-bottom:13px}
+.scan-btn:disabled{opacity:.55;cursor:wait}
 
-        .banner-container {
-            width: 100%; margin-bottom: 15px; border-radius: 16px; overflow: hidden;
-            border: 1px solid rgba(255, 255, 255, 0.1); background: #000;
-        }
+.signal-card{background:linear-gradient(145deg,#0c121b,#080c13);border:1px solid var(--line);border-radius:20px;padding:17px;margin-bottom:13px}
+.signal-top{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.pill{font-size:10px;font-weight:900;padding:6px 9px;border-radius:999px;background:rgba(255,255,255,.06);color:var(--muted)}
+.pill.live{color:#7df2c5;background:rgba(16,185,129,.1)}
+.signal-direction{text-align:center;font-size:34px;font-weight:1000;letter-spacing:1.5px;padding:17px 0 5px}
+.CALL{color:var(--green)}.PUT{color:var(--red)}.WAIT{color:var(--yellow)}
+.confidence{text-align:center;color:var(--muted);font-size:11px}
+.timer{text-align:center;margin-top:10px;font-size:12px;color:#cbd5e1;font-weight:700}
 
-        .banner-container img { width: 100%; height: auto; display: block; object-fit: contain; }
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:14px}
+.metric{background:rgba(255,255,255,.025);border:1px solid var(--line);border-radius:12px;padding:10px}
+.metric span{display:block;color:var(--muted);font-size:9px;margin-bottom:4px}
+.metric b{font-size:12px}
 
-        .quotex-badge {
-            background: rgba(0, 136, 204, 0.15); border: 1px solid var(--quotex-blue);
-            color: #38BDF8; padding: 6px 12px; border-radius: 20px; font-size: 11px;
-            font-weight: bold; display: inline-flex; align-items: center; gap: 6px; margin-bottom: 12px;
-        }
+.section-title{font-size:10px;color:var(--muted);font-weight:900;letter-spacing:1px;margin:15px 0 7px}
+.status{padding:10px;border-radius:11px;background:rgba(255,255,255,.035);font-size:10px;color:#cbd5e1;line-height:1.5}
 
-        .bot-title-section { text-align: center; margin-bottom: 20px; }
-        .bot-title-section h1 { font-size: 20px; font-weight: 800; color: #FFFFFF; display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 4px; }
-        .bot-title-section p { font-size: 12px; color: var(--text-sub); font-weight: 500; }
-
-        .stats-grid {
-            display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;
-            background: rgba(0, 0, 0, 0.2); padding: 12px; border-radius: 16px; margin-bottom: 20px;
-            border: 1px solid rgba(255, 255, 255, 0.05);
-        }
-        .stat-box { text-align: center; }
-        .stat-box .val { font-size: 16px; font-weight: bold; }
-        .stat-box .lbl { font-size: 10px; color: var(--text-sub); margin-top: 2px; }
-
-        .controls { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
-        .control-group { text-align: left; }
-        .control-group label { font-size: 11px; color: var(--text-sub); margin-bottom: 6px; display: block; }
-        select {
-            width: 100%; background: #0B0E14; color: white; border: 1px solid rgba(255, 255, 255, 0.15);
-            padding: 12px; border-radius: 12px; font-size: 13px; outline: none;
-        }
-
-        .btn-action {
-            width: 100%; background: linear-gradient(135deg, #6366F1, #4F46E5); color: white; border: none;
-            padding: 14px; border-radius: 14px; font-size: 16px; font-weight: bold; cursor: pointer;
-            box-shadow: 0 4px 20px var(--accent-glow); margin-bottom: 20px;
-        }
-
-        .signal-card {
-            background: rgba(0, 0, 0, 0.3); border: 2px dashed rgba(255, 255, 255, 0.1);
-            border-radius: 18px; padding: 20px; text-align: center; margin-bottom: 20px;
-        }
-        .accuracy-badge {
-            display: inline-block; padding: 4px 12px; border-radius: 20px;
-            background: rgba(16, 185, 129, 0.2); color: var(--green); font-size: 12px; font-weight: bold; margin-bottom: 10px;
-        }
-        .signal-direction { font-size: 28px; font-weight: 900; letter-spacing: 1px; margin: 5px 0; }
-        .CALL { color: var(--green); }
-        .PUT { color: var(--red); }
-        .WAIT { color: var(--yellow); font-size: 20px; }
-        .timer-box { font-size: 13px; color: var(--text-sub); margin-top: 10px; }
-
-        .filter-panel {
-            display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px;
-            background: rgba(255, 255, 255, 0.03); padding: 10px; border-radius: 12px; text-align: left; font-size: 11px;
-        }
-        .filter-box { display: flex; flex-direction: column; gap: 3px; }
-        .filter-box span b { color: #F3F4F6; }
-
-        .widget-container {
-            width: 100%; height: 380px; border-radius: 16px; overflow: hidden; margin-bottom: 20px;
-            border: 1px solid rgba(255, 255, 255, 0.08);
-        }
-
-        .trade-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .btn-win { background: var(--green); color: white; border: none; padding: 12px; border-radius: 12px; font-weight: bold; cursor: pointer; }
-        .btn-loss { background: var(--red); color: white; border: none; padding: 12px; border-radius: 12px; font-weight: bold; cursor: pointer; }
-    </style>
+.widget-container{height:380px;border:1px solid var(--line);border-radius:17px;overflow:hidden;margin-bottom:13px;background:#090d14}
+.trade-buttons{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.trade-buttons button{border:0;padding:12px;border-radius:12px;color:#fff;font-weight:900;cursor:pointer}
+.win{background:#059669}.loss{background:#dc2626}
+.footer{text-align:center;color:#586273;font-size:9px;margin-top:13px;line-height:1.5}
+@media(max-width:380px){.stats{grid-template-columns:repeat(2,1fr)}.controls{grid-template-columns:1fr}.signal-direction{font-size:29px}}
+</style>
 </head>
+
 <body>
 
-    <div id="lock-screen">
-        <div class="lock-card">
-            <i class="fab fa-whatsapp"></i>
-            <h2>Community Access Locked</h2>
-            <p>Accessing <b>AK Premium Bot</b> requires joining our Official WhatsApp Community.</p>
-            <a href="https://chat.whatsapp.com/HOOyD7NhzWWIhAq4LRuJZt" target="_blank" class="btn-whatsapp" id="unlock-btn">
-                <i class="fab fa-whatsapp"></i> Join Community To Unlock
-            </a>
-        </div>
-    </div>
+<div id="lock-screen">
+ <div class="lock-card">
+  <i class="fab fa-whatsapp"></i>
+  <h2>Community Access Locked</h2>
+  <p>Accessing <b>AK Premium Bot</b> requires joining our Official WhatsApp Community.</p>
+  <a href="https://chat.whatsapp.com/HOOyD7NhzWWIhAq4LRuJZt" target="_blank" class="btn-whatsapp" id="unlock-btn">
+   <i class="fab fa-whatsapp"></i> Join Community To Unlock
+  </a>
+ </div>
+</div>
 
-    <div class="dashboard">
-        <div class="banner-container">
-            <img src="IMG-20261005-WA3898.jpg" alt="AK Premium Bot Header Poster">
-        </div>
+<div class="dashboard">
 
-        <div style="text-align: center;">
-            <span class="quotex-badge"><i class="fas fa-microchip"></i> REAL TRADINGVIEW SCALPER v20.0</span>
-        </div>
+ <div class="banner-container">
+  <img src="IMG-20261005-WA3898.jpg" alt="AK Premium Bot">
+ </div>
 
-        <div class="bot-title-section">
-            <h1><i class="fas fa-chart-line" style="color: #6366F1;"></i> AK Pro Candle Scalper</h1>
-            <p>Real-Time TradingView API Engine</p>
-        </div>
+ <div style="text-align:center">
+  <span class="version-badge"><i class="fas fa-microchip"></i> AK INSTITUTIONAL SCALPER v21.0</span>
+ </div>
 
-        <div class="stats-grid">
-            <div class="stat-box"><div class="val" id="total-trades" style="color:#3B82F6;">0</div><div class="lbl">Total</div></div>
-            <div class="stat-box"><div class="val" id="wins" style="color:var(--green);">0</div><div class="lbl">Wins</div></div>
-            <div class="stat-box"><div class="val" id="losses" style="color:var(--red);">0</div><div class="lbl">Losses</div></div>
-            <div class="stat-box"><div class="val" id="win-rate" style="color:#F59E0B;">0%</div><div class="lbl">Win Rate</div></div>
-        </div>
+ <div class="title">
+  <h1><i class="fas fa-chart-line" style="color:#6366f1"></i> AK Pro Candle Scalper</h1>
+  <p>Multi-Timeframe Technical Confirmation Engine</p>
+ </div>
 
-        <div class="controls">
-            <div class="control-group">
-                <label>TRADING PAIR</label>
-                <select id="pair" onchange="onPairOrTimeframeChange()">
-                    <option value="EURUSD" selected>EUR/USD (Quotex)</option>
-                    <option value="EURJPY">EUR/JPY (Quotex)</option>
-                    <option value="USDJPY">USD/JPY (Quotex)</option>
-                    <option value="GBPUSD">GBP/USD (Quotex)</option>
-                    <option value="AUDCHF">AUD/CHF (Quotex)</option>
-                    <option value="AUDJPY">AUD/JPY (Quotex)</option>
-                    <option value="CHFJPY">CHF/JPY (Quotex)</option>
-                    <option value="EURCHF">EUR/CHF (Quotex)</option>
-                    <option value="GBPAUD">GBP/AUD (Quotex)</option>
-                    <option value="AUDCAD">AUD/CAD (Quotex)</option>
-                    <option value="EURAUD">EUR/AUD (Quotex)</option>
-                    <option value="EURCAD">EUR/CAD (Quotex)</option>
-                    <option value="AUDUSD">AUD/USD (Quotex)</option>
-                    <option value="GBPCAD">GBP/CAD (Quotex)</option>
-                    <option value="GBPCHF">GBP/CHF (Quotex)</option>
-                    <option value="USDCAD">USD/CAD (Quotex)</option>
-                    <option value="USDCHF">USD/CHF (Quotex)</option>
-                    <option value="BTCUSDT">BTC/USDT (Quotex)</option>
-                    <option value="ETHUSDT">ETH/USDT (Quotex)</option>
-                </select>
-            </div>
-            <div class="control-group">
-                <label>EXPIRY TIMEFRAME</label>
-                <select id="tf" onchange="onPairOrTimeframeChange()">
-                    <option value="1m">1 Minute (Next Candle)</option>
-                    <option value="5m">5 Minutes (Next Candle)</option>
-                </select>
-            </div>
-        </div>
+ <div class="stats">
+  <div class="stat"><b id="total-trades" style="color:#60a5fa">0</b><span>Total</span></div>
+  <div class="stat"><b id="wins" style="color:var(--green)">0</b><span>Wins</span></div>
+  <div class="stat"><b id="losses" style="color:var(--red)">0</b><span>Losses</span></div>
+  <div class="stat"><b id="win-rate" style="color:var(--yellow)">0%</b><span>Win Rate</span></div>
+ </div>
 
-        <button class="btn-action" onclick="fetchAndAnalyze()">SCAN CURRENT CANDLE</button>
+ <div class="controls">
+  <div>
+   <label>TRADING PAIR</label>
+   <select id="pair" onchange="resetUI();updateTVWidget()">
+    <option value="EURUSD">EUR/USD</option>
+    <option value="EURJPY">EUR/JPY</option>
+    <option value="USDJPY">USD/JPY</option>
+    <option value="GBPUSD">GBP/USD</option>
+    <option value="AUDCHF">AUD/CHF</option>
+    <option value="AUDJPY">AUD/JPY</option>
+    <option value="CHFJPY">CHF/JPY</option>
+    <option value="EURCHF">EUR/CHF</option>
+    <option value="GBPAUD">GBP/AUD</option>
+    <option value="AUDCAD">AUD/CAD</option>
+    <option value="EURAUD">EUR/AUD</option>
+    <option value="EURCAD">EUR/CAD</option>
+    <option value="AUDUSD">AUD/USD</option>
+    <option value="GBPCAD">GBP/CAD</option>
+    <option value="GBPCHF">GBP/CHF</option>
+    <option value="USDCAD">USD/CAD</option>
+    <option value="USDCHF">USD/CHF</option>
+    <option value="NZDUSD">NZD/USD</option>
+    <option value="GBPJPY">GBP/JPY</option>
+    <option value="EURGBP">EUR/GBP</option>
+    <option value="BTCUSDT">BTC/USDT</option>
+    <option value="ETHUSDT">ETH/USDT</option>
+   </select>
+  </div>
 
-        <div class="signal-card">
-            <div class="accuracy-badge" id="acc-badge">Win Confidence: --%</div>
-            <div class="signal-direction" id="signal-dir" style="color: var(--text-sub);">START ANALYSIS</div>
-            <div class="timer-box" id="timer-box">Next candle entry in: --s</div>
+  <div>
+   <label>TIMEFRAME</label>
+   <select id="tf" onchange="resetUI();updateTVWidget()">
+    <option value="1m">1 Minute</option>
+    <option value="5m">5 Minutes</option>
+   </select>
+  </div>
+ </div>
 
-            <div class="filter-panel">
-                <div class="filter-box">
-                    <span>EMA 9/21 Trend: <b id="ema-val">--</b></span>
-                    <span>RSI Momentum: <b id="rsi-val">--</b></span>
-                </div>
-                <div class="filter-box">
-                    <span>Candle Volume: <b id="vol-val">--</b></span>
-                    <span>Market State: <b id="filter-result" style="color:var(--green);">--</b></span>
-                </div>
-            </div>
-        </div>
+ <button class="scan-btn" id="scan-btn" onclick="fetchAndAnalyze()">
+  <i class="fas fa-radar"></i> SCAN MARKET
+ </button>
 
-        <div class="widget-container" id="tv-widget-holder"></div>
+ <div class="signal-card">
+  <div class="signal-top">
+   <span class="pill" id="feed-pill">FEED: --</span>
+   <span class="pill" id="bias-pill">MTF: --</span>
+  </div>
 
-        <div class="trade-buttons">
-            <button class="btn-win" onclick="recordTrade(true)"><i class="fas fa-check-circle"></i> WIN</button>
-            <button class="btn-loss" onclick="recordTrade(false)"><i class="fas fa-times-circle"></i> LOSS</button>
-        </div>
-    </div>
+  <div class="signal-direction" id="signal-dir">READY</div>
+  <div class="confidence" id="acc-badge">Analysis confidence: --</div>
+  <div class="timer" id="timer-box">Next candle entry in: --</div>
 
-    <script>
-        let total = 0, wins = 0, losses = 0;
-        let timerInterval = null;
+  <div class="section-title">ENGINE METRICS</div>
+  <div class="grid">
+   <div class="metric"><span>Technical Signal</span><b id="tech-signal">--</b></div>
+   <div class="metric"><span>Technical Score</span><b id="tech-score">--</b></div>
+   <div class="metric"><span>AI Confirmation</span><b id="ai-signal">--</b></div>
+   <div class="metric"><span>AI Score</span><b id="ai-score">--</b></div>
+   <div class="metric"><span>EMA 9 / 21 / 50</span><b id="ema-val">--</b></div>
+   <div class="metric"><span>RSI</span><b id="rsi-val">--</b></div>
+   <div class="metric"><span>MACD</span><b id="macd-val">--</b></div>
+   <div class="metric"><span>Feed Age</span><b id="feed-age">--</b></div>
+  </div>
 
-        // Corrected Vercel Backend URL
-        const BACKEND_URL = "https://ak-binary-bot.vercel.app/api/scan";
+  <div class="section-title">MARKET STATUS</div>
+  <div class="status" id="filter-result">Waiting for scan...</div>
+ </div>
 
-        function checkLockStatus() {
-            if (localStorage.getItem("ak_bot_wa_unlocked") === "true") {
-                const lockElem = document.getElementById("lock-screen");
-                if (lockElem) lockElem.style.display = "none";
-            }
-        }
+ <div class="widget-container" id="tv-widget-holder"></div>
 
-        document.getElementById("unlock-btn").addEventListener("click", function() {
-            localStorage.setItem("ak_bot_wa_unlocked", "true");
-            document.getElementById("lock-screen").style.display = "none";
-        });
+ <div class="trade-buttons">
+  <button class="win" onclick="recordTrade(true)"><i class="fas fa-check-circle"></i> WIN</button>
+  <button class="loss" onclick="recordTrade(false)"><i class="fas fa-times-circle"></i> LOSS</button>
+ </div>
 
-        function onPairOrTimeframeChange() {
-            clearInterval(timerInterval);
-            document.getElementById("timer-box").innerText = "Next candle entry in: --s";
-            document.getElementById("signal-dir").innerText = "START ANALYSIS";
-            document.getElementById("signal-dir").className = "signal-direction";
-            document.getElementById("acc-badge").innerText = "Win Confidence: --%";
-            
-            document.getElementById("ema-val").innerText = "--";
-            document.getElementById("rsi-val").innerText = "--";
-            document.getElementById("vol-val").innerText = "--";
-            document.getElementById("filter-result").innerText = "--";
+ <div class="footer">
+  AK Pro Candle Scalper v21.0 • Technical confirmation only<br>
+  No signal can guarantee a winning trade.
+ </div>
+</div>
 
-            updateTVWidget();
-        }
+<script>
+let total=0,wins=0,losses=0,timerInterval=null;
+const BACKEND_URL="https://ak-binary-bot.vercel.app/api/scan";
 
-        function updateTVWidget() {
-            const pair = document.getElementById("pair").value;
-            const tf = document.getElementById("tf").value;
-            const container = document.getElementById('tv-widget-holder');
-            container.innerHTML = '';
+function checkLockStatus(){
+ const lock=document.getElementById("lock-screen");
+ if(localStorage.getItem("ak_bot_wa_unlocked")==="true") lock.style.display="none";
+}
+document.getElementById("unlock-btn").addEventListener("click",()=>{
+ localStorage.setItem("ak_bot_wa_unlocked","true");
+ document.getElementById("lock-screen").style.display="none";
+});
 
-            let symbol = pair.includes("USDT") ? `BINANCE:${pair}` : `FX_IDC:${pair}`;
+function resetUI(){
+ clearInterval(timerInterval);
+ document.getElementById("signal-dir").className="signal-direction";
+ document.getElementById("signal-dir").innerText="READY";
+ document.getElementById("acc-badge").innerText="Analysis confidence: --";
+ document.getElementById("timer-box").innerText="Next candle entry in: --";
+ ["tech-signal","tech-score","ai-signal","ai-score","ema-val","rsi-val","macd-val","feed-age"].forEach(id=>document.getElementById(id).innerText="--");
+ document.getElementById("feed-pill").innerText="FEED: --";
+ document.getElementById("bias-pill").innerText="MTF: --";
+ document.getElementById("filter-result").innerText="Waiting for scan...";
+}
 
-            const script = document.createElement('script');
-            script.type = 'text/javascript';
-            script.src = 'https://s3.tradingview.com/external-embedding/embed-widget-technical-analysis.js';
-            script.async = true;
-            script.innerHTML = JSON.stringify({
-                "interval": tf,
-                "width": "100%",
-                "isTransparent": true,
-                "height": "100%",
-                "symbol": symbol,
-                "showIntervalTabs": false,
-                "displayMode": "single",
-                "locale": "en",
-                "colorTheme": "dark"
-            });
-            container.appendChild(script);
-        }
+function updateTVWidget(){
+ const pair=document.getElementById("pair").value;
+ const tf=document.getElementById("tf").value;
+ const holder=document.getElementById("tv-widget-holder");
+ holder.innerHTML="";
+ const symbol=pair.includes("USDT")?`BINANCE:${pair}`:`FX_IDC:${pair}`;
+ const script=document.createElement("script");
+ script.src="https://s3.tradingview.com/external-embedding/embed-widget-technical-analysis.js";
+ script.async=true;
+ script.innerHTML=JSON.stringify({
+  interval:tf,width:"100%",height:"100%",isTransparent:true,
+  symbol,showIntervalTabs:false,displayMode:"single",locale:"en",colorTheme:"dark"
+ });
+ holder.appendChild(script);
+}
 
-        // Dedicated Node.js Proxy Fetcher with 25s Timeout Limit
-        async function fetchTradingViewData(pair, timeframe) {
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 25000); // Increased timeout to 25s
+async function fetchBackend(pair,timeframe){
+ const controller=new AbortController();
+ const timeout=setTimeout(()=>controller.abort(),25000);
+ try{
+  const url=`${BACKEND_URL}?pair=${encodeURIComponent(pair)}&timeframe=${encodeURIComponent(timeframe)}`;
+  const res=await fetch(url,{method:"GET",signal:controller.signal});
+  clearTimeout(timeout);
+  if(!res.ok) throw new Error(`HTTP ${res.status}`);
+  return await res.json();
+ }catch(e){
+  clearTimeout(timeout);
+  console.error(e);
+  return null;
+ }
+}
 
-            try {
-                const res = await fetch(BACKEND_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ pair: pair, ticker: pair, timeframe: timeframe }),
-                    signal: controller.signal
-                });
-                clearTimeout(timeoutId);
-                const responseData = await res.json();
-                
-                if (responseData.success && responseData.data) {
-                    return responseData.data;
-                } else if (responseData.dir) {
-                    // Direct AI response fallback
-                    return responseData;
-                }
-            } catch (e) {
-                console.error("Backend Connection Error:", e);
-            }
+function fmt(n,d=2){
+ return Number.isFinite(Number(n))?Number(n).toFixed(d):"--";
+}
 
-            return null;
-        }
+function startTimer(){
+ clearInterval(timerInterval);
+ const tf=document.getElementById("tf").value;
+ timerInterval=setInterval(()=>{
+  const now=new Date();
+  const sec=now.getSeconds();
+  let left;
+  if(tf==="5m") left=300-((now.getMinutes()%5)*60+sec);
+  else left=60-sec;
+  document.getElementById("timer-box").innerText=`Next candle entry in: ${left}s`;
+ },1000);
+}
 
-        async function analyzeMarket(pair) {
-            const tf = document.getElementById("tf").value;
-            const data = await fetchTradingViewData(pair, tf);
+async function fetchAndAnalyze(){
+ const btn=document.getElementById("scan-btn");
+ const dir=document.getElementById("signal-dir");
+ const pair=document.getElementById("pair").value;
+ const tf=document.getElementById("tf").value;
 
-            if (!data) {
-                return {
-                    dir: "WAIT",
-                    score: 0,
-                    ema: "N/A",
-                    rsi: "N/A",
-                    vol: "N/A",
-                    status: "SERVER TIMEOUT"
-                };
-            }
+ btn.disabled=true;
+ dir.className="signal-direction";
+ dir.innerText="SCANNING...";
+ document.getElementById("filter-result").innerText="Fetching closed candles + multi-timeframe confirmation...";
+ clearInterval(timerInterval);
 
-            // Direct response check if Gemini backend output format is returned
-            if (data.dir) {
-                return {
-                    dir: data.dir,
-                    score: data.score || data.confidence || 90,
-                    ema: data.ema || "EMA 9/21 OK",
-                    rsi: data.rsi || "RSI OK",
-                    vol: data.vol || "NORMAL VOLUME",
-                    status: data.status || data.reason || "ANALYSIS COMPLETE"
-                };
-            }
+ const data=await fetchBackend(pair,tf);
 
-            let emaTrend = (data.ema10 >= data.ema20) ? "BULLISH" : "BEARISH";
-            let rsiVal = Math.round(data.rsi || 50);
-            let volumeState = Math.abs(data.summary || 0) > 0.25 ? "HIGH VOLUME" : "NORMAL VOLUME";
+ btn.disabled=false;
 
-            if (data.summary > 0.15 && rsiVal >= 50 && rsiVal <= 70) {
-                return {
-                    dir: "CALL",
-                    score: Math.min(97, Math.floor(88 + Math.abs(data.summary) * 12)),
-                    ema: emaTrend,
-                    rsi: `${rsiVal} (BULLISH)`,
-                    vol: volumeState,
-                    status: "STRONG BUY CONFIRMED"
-                };
-            } else if (data.summary < -0.15 && rsiVal <= 50 && rsiVal >= 30) {
-                return {
-                    dir: "PUT",
-                    score: Math.min(97, Math.floor(88 + Math.abs(data.summary) * 12)),
-                    ema: emaTrend,
-                    rsi: `${rsiVal} (BEARISH)`,
-                    vol: volumeState,
-                    status: "STRONG SELL CONFIRMED"
-                };
-            } else {
-                let reason = rsiVal > 70 ? "OVERBOUGHT ZONE" : (rsiVal < 30 ? "OVERSOLD ZONE" : "CONSOLIDATION ZONE");
-                return {
-                    dir: "WAIT",
-                    score: 92,
-                    ema: emaTrend,
-                    rsi: `${rsiVal} (SIDEWAYS)`,
-                    vol: volumeState,
-                    status: reason
-                };
-            }
-        }
+ if(!data||data.ok===false){
+  dir.className="signal-direction WAIT";
+  dir.innerText="WAIT";
+  document.getElementById("acc-badge").innerText="No valid signal";
+  document.getElementById("filter-result").innerText=data?.error||"Backend/data unavailable. No trade.";
+  return;
+ }
 
-        async function fetchAndAnalyze() {
-            const dirEl = document.getElementById("signal-dir");
-            const accEl = document.getElementById("acc-badge");
-            const pair = document.getElementById("pair").value;
+ const signal=data.signal||"WAIT";
+ const score=Number(data.score||0);
 
-            dirEl.innerText = "ANALYZING LIVE CANDLE...";
-            dirEl.className = "signal-direction";
+ dir.className=`signal-direction ${signal}`;
+ dir.innerText=signal;
+ document.getElementById("acc-badge").innerText=`Analysis confidence: ${score}%`;
 
-            const result = await analyzeMarket(pair);
+ document.getElementById("tech-signal").innerText=data.technicalSignal||"--";
+ document.getElementById("tech-score").innerText=data.technicalScore!=null?`${data.technicalScore}%`:"--";
+ document.getElementById("ai-signal").innerText=data.aiSignal||"--";
+ document.getElementById("ai-score").innerText=data.aiScore!=null?`${data.aiScore}%`:"--";
 
-            document.getElementById("ema-val").innerText = result.ema;
-            document.getElementById("rsi-val").innerText = result.rsi;
-            document.getElementById("vol-val").innerText = result.vol;
+ document.getElementById("ema-val").innerText=
+  `${fmt(data.ema9,5)} / ${fmt(data.ema21,5)} / ${fmt(data.ema50,5)}`;
 
-            if (result.dir === "WAIT") {
-                dirEl.innerText = result.status === "SERVER TIMEOUT" ? "SERVER TIMEOUT" : "WAIT (NO TRADE)";
-                dirEl.className = "signal-direction WAIT";
-                accEl.innerText = `Safety Score: ${result.score}%`;
-                document.getElementById("filter-result").innerText = result.status;
-                document.getElementById("filter-result").style.color = "var(--yellow)";
-                clearInterval(timerInterval);
-                document.getElementById("timer-box").innerText = "Next candle entry in: --s";
-            } else {
-                dirEl.innerText = result.dir;
-                dirEl.className = `signal-direction ${result.dir}`;
-                accEl.innerText = `Win Confidence: ${result.score}%`;
-                document.getElementById("filter-result").innerText = result.status;
-                document.getElementById("filter-result").style.color = "var(--green)";
+ document.getElementById("rsi-val").innerText=
+  data.rsi!=null?fmt(data.rsi,1):"--";
 
-                startIndependentTimer();
-            }
-        }
+ document.getElementById("macd-val").innerText=
+  data.macd?.histogram!=null?fmt(data.macd.histogram,6):"--";
 
-        function startIndependentTimer() {
-            clearInterval(timerInterval);
-            const tf = document.getElementById("tf").value;
-            const is5m = (tf === "5m");
+ document.getElementById("feed-age").innerText=
+  data.feedAgeSeconds!=null?`${data.feedAgeSeconds}s`:"--";
 
-            timerInterval = setInterval(() => {
-                const now = new Date();
-                const currentSeconds = now.getSeconds();
-                const currentMinutes = now.getMinutes();
+ document.getElementById("feed-pill").innerText=
+  `FEED: ${data.dataSource||"--"}`;
 
-                let secondsLeft = 0;
-                if (is5m) {
-                    let minuteInBlock = currentMinutes % 5;
-                    let totalPassedSeconds = (minuteInBlock * 60) + currentSeconds;
-                    secondsLeft = 300 - totalPassedSeconds;
-                } else {
-                    secondsLeft = 60 - currentSeconds;
-                }
+ document.getElementById("bias-pill").innerText=
+  `MTF: ${data.higherTimeframeBias||"--"}`;
 
-                if (secondsLeft > 0) {
-                    document.getElementById("timer-box").innerText = `Next candle entry in: ${secondsLeft}s`;
-                } else {
-                    document.getElementById("timer-box").innerText = "⚡ TAKE ENTRY NOW!";
-                }
-            }, 1000);
-        }
+ let reason=data.aiReason||data.reason||"Analysis complete.";
+ if(data.warning) reason+=` ${data.warning}`;
 
-        function recordTrade(isWin) {
-            total++;
-            if (isWin) wins++; else losses++;
-            document.getElementById("total-trades").innerText = total;
-            document.getElementById("wins").innerText = wins;
-            document.getElementById("losses").innerText = losses;
-            document.getElementById("win-rate").innerText = `${Math.round((wins / total) * 100)}%`;
-        }
+ document.getElementById("filter-result").innerText=reason;
 
-        window.onload = function() {
-            checkLockStatus();
-            updateTVWidget();
-        };
-    </script>
+ if(signal==="WAIT"){
+  document.getElementById("filter-result").style.color="var(--yellow)";
+  document.getElementById("timer-box").innerText="No entry — wait for a confirmed setup.";
+ }else{
+  document.getElementById("filter-result").style.color="#cbd5e1";
+  startTimer();
+ }
+}
+
+function recordTrade(isWin){
+ total++;
+ if(isWin) wins++; else losses++;
+ document.getElementById("total-trades").innerText=total;
+ document.getElementById("wins").innerText=wins;
+ document.getElementById("losses").innerText=losses;
+ document.getElementById("win-rate").innerText=`${Math.round((wins/total)*100)}%`;
+}
+
+window.onload=()=>{
+ checkLockStatus();
+ updateTVWidget();
+};
+</script>
 </body>
 </html>
