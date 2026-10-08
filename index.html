@@ -3,342 +3,1858 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AK Pro Candle Scalper v21.0</title>
+<title>AK Institutional Scalper v22.0</title>
+
 <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
 
 <style>
 :root{
- --bg:#070a10;--card:#10151f;--card2:#0b1018;--line:rgba(255,255,255,.08);
- --text:#f5f7fb;--muted:#8d98a8;--blue:#6366f1;--cyan:#38bdf8;
- --green:#10b981;--red:#ef4444;--yellow:#f59e0b;
+  --bg:#05070c;
+  --panel:#0b1018;
+  --panel2:#0e1520;
+  --panel3:#080c13;
+  --line:rgba(255,255,255,.075);
+
+  --text:#f7f9fc;
+  --muted:#7f8a9b;
+
+  --blue:#3b82f6;
+  --cyan:#22d3ee;
+  --purple:#8b5cf6;
+
+  --green:#00d68f;
+  --red:#ff4567;
+  --yellow:#f5b942;
+
+  --shadow:0 25px 70px rgba(0,0,0,.55);
 }
-*{box-sizing:border-box;font-family:Inter,Segoe UI,Tahoma,sans-serif}
-body{margin:0;min-height:100vh;background:radial-gradient(circle at top,#151b2b 0,#070a10 48%,#05070b 100%);color:var(--text);padding:16px}
-button,select{font:inherit}
-#lock-screen{position:fixed;inset:0;background:rgba(3,6,10,.96);backdrop-filter:blur(14px);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px}
-.lock-card{width:min(420px,100%);background:linear-gradient(145deg,#141b27,#0b1018);border:1px solid var(--line);border-radius:24px;padding:32px;text-align:center;box-shadow:0 25px 80px #000}
-.lock-card i{font-size:58px;color:#25d366;margin-bottom:15px}
-.lock-card h2{margin:0 0 10px;font-size:23px}
-.lock-card p{color:var(--muted);line-height:1.6;font-size:14px;margin-bottom:24px}
-.btn-whatsapp{display:flex;justify-content:center;align-items:center;gap:9px;background:#25d366;color:#fff;text-decoration:none;padding:14px;border-radius:13px;font-weight:800}
 
-.dashboard{width:min(500px,100%);margin:auto;background:rgba(15,20,29,.96);border:1px solid var(--line);border-radius:26px;padding:16px;box-shadow:0 25px 70px rgba(0,0,0,.55)}
-.banner-container{border-radius:18px;overflow:hidden;border:1px solid var(--line);background:#000;margin-bottom:14px}
-.banner-container img{width:100%;display:block;object-fit:contain}
+*{
+  box-sizing:border-box;
+  font-family:Inter,Segoe UI,Tahoma,sans-serif;
+}
 
-.version-badge{display:inline-flex;align-items:center;gap:7px;padding:7px 12px;border-radius:999px;border:1px solid rgba(56,189,248,.35);background:rgba(56,189,248,.08);color:#67d3ff;font-size:10px;font-weight:900;letter-spacing:.5px}
-.title{text-align:center;padding:13px 0 17px}
-.title h1{font-size:21px;margin:8px 0 4px;font-weight:900}
-.title p{margin:0;color:var(--muted);font-size:11px}
+html{
+  background:var(--bg);
+}
 
-.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-bottom:14px}
-.stat{background:var(--card2);border:1px solid var(--line);border-radius:14px;padding:11px 5px;text-align:center}
-.stat b{display:block;font-size:16px}.stat span{font-size:9px;color:var(--muted);text-transform:uppercase}
+body{
+  margin:0;
+  min-height:100vh;
+  padding:14px;
+  color:var(--text);
+  background:
+    radial-gradient(circle at 50% -10%,rgba(59,130,246,.17),transparent 35%),
+    radial-gradient(circle at 100% 20%,rgba(139,92,246,.09),transparent 30%),
+    linear-gradient(180deg,#070a10,#030509);
+}
 
-.controls{display:grid;grid-template-columns:1.25fr .75fr;gap:9px;margin-bottom:10px}
-label{display:block;color:var(--muted);font-size:9px;font-weight:800;margin:0 0 5px 3px;letter-spacing:.6px}
-select{width:100%;background:#080c13;color:#fff;border:1px solid var(--line);border-radius:12px;padding:12px 10px;outline:none;font-size:12px}
+/* ================= LOCK SCREEN ================= */
 
-.scan-btn{width:100%;border:0;border-radius:14px;padding:14px;background:linear-gradient(135deg,#6366f1,#4338ca);color:white;font-weight:900;letter-spacing:.4px;box-shadow:0 8px 25px rgba(99,102,241,.25);cursor:pointer;margin-bottom:13px}
-.scan-btn:disabled{opacity:.55;cursor:wait}
+#lock-screen{
+  position:fixed;
+  inset:0;
+  z-index:99999;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:20px;
 
-.signal-card{background:linear-gradient(145deg,#0c121b,#080c13);border:1px solid var(--line);border-radius:20px;padding:17px;margin-bottom:13px}
-.signal-top{display:flex;justify-content:space-between;align-items:center;gap:10px}
-.pill{font-size:10px;font-weight:900;padding:6px 9px;border-radius:999px;background:rgba(255,255,255,.06);color:var(--muted)}
-.pill.live{color:#7df2c5;background:rgba(16,185,129,.1)}
-.signal-direction{text-align:center;font-size:34px;font-weight:1000;letter-spacing:1.5px;padding:17px 0 5px}
-.CALL{color:var(--green)}.PUT{color:var(--red)}.WAIT{color:var(--yellow)}
-.confidence{text-align:center;color:var(--muted);font-size:11px}
-.timer{text-align:center;margin-top:10px;font-size:12px;color:#cbd5e1;font-weight:700}
+  background:
+    radial-gradient(circle at 50% 30%,rgba(37,211,102,.08),transparent 30%),
+    rgba(2,4,8,.97);
 
-.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:14px}
-.metric{background:rgba(255,255,255,.025);border:1px solid var(--line);border-radius:12px;padding:10px}
-.metric span{display:block;color:var(--muted);font-size:9px;margin-bottom:4px}
-.metric b{font-size:12px}
+  backdrop-filter:blur(18px);
+}
 
-.section-title{font-size:10px;color:var(--muted);font-weight:900;letter-spacing:1px;margin:15px 0 7px}
-.status{padding:10px;border-radius:11px;background:rgba(255,255,255,.035);font-size:10px;color:#cbd5e1;line-height:1.5}
+.lock-card{
+  width:min(430px,100%);
+  padding:34px 26px;
+  text-align:center;
 
-.widget-container{height:380px;border:1px solid var(--line);border-radius:17px;overflow:hidden;margin-bottom:13px;background:#090d14}
-.trade-buttons{display:grid;grid-template-columns:1fr 1fr;gap:9px}
-.trade-buttons button{border:0;padding:12px;border-radius:12px;color:#fff;font-weight:900;cursor:pointer}
-.win{background:#059669}.loss{background:#dc2626}
-.footer{text-align:center;color:#586273;font-size:9px;margin-top:13px;line-height:1.5}
-@media(max-width:380px){.stats{grid-template-columns:repeat(2,1fr)}.controls{grid-template-columns:1fr}.signal-direction{font-size:29px}}
+  background:
+    linear-gradient(145deg,rgba(18,25,37,.98),rgba(7,11,17,.98));
+
+  border:1px solid rgba(37,211,102,.18);
+  border-radius:26px;
+
+  box-shadow:
+    0 35px 100px rgba(0,0,0,.75),
+    inset 0 1px 0 rgba(255,255,255,.04);
+}
+
+.lock-icon{
+  width:78px;
+  height:78px;
+  margin:0 auto 18px;
+
+  display:flex;
+  align-items:center;
+  justify-content:center;
+
+  border-radius:22px;
+
+  background:rgba(37,211,102,.08);
+  border:1px solid rgba(37,211,102,.18);
+
+  box-shadow:0 0 35px rgba(37,211,102,.08);
+}
+
+.lock-icon i{
+  font-size:42px;
+  color:#25d366;
+}
+
+.lock-card h2{
+  margin:0 0 8px;
+  font-size:23px;
+  font-weight:900;
+}
+
+.lock-card .premium{
+  color:#25d366;
+}
+
+.lock-card p{
+  color:var(--muted);
+  font-size:13px;
+  line-height:1.65;
+  margin:0 0 25px;
+}
+
+.btn-whatsapp{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:9px;
+
+  padding:14px;
+
+  border-radius:14px;
+
+  background:linear-gradient(135deg,#25d366,#13a653);
+  color:white;
+
+  text-decoration:none;
+  font-weight:900;
+
+  box-shadow:0 12px 30px rgba(37,211,102,.18);
+}
+
+/* ================= DASHBOARD ================= */
+
+.dashboard{
+  width:min(510px,100%);
+  margin:auto;
+
+  padding:13px;
+
+  background:
+    linear-gradient(145deg,rgba(13,18,27,.98),rgba(6,9,14,.98));
+
+  border:1px solid rgba(255,255,255,.075);
+  border-radius:28px;
+
+  box-shadow:var(--shadow);
+}
+
+/* ================= BANNER ================= */
+
+.banner-container{
+  position:relative;
+  overflow:hidden;
+
+  border-radius:19px;
+  border:1px solid var(--line);
+
+  background:#000;
+  margin-bottom:12px;
+
+  box-shadow:0 15px 35px rgba(0,0,0,.35);
+}
+
+.banner-container:after{
+  content:"";
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+
+  background:linear-gradient(
+    180deg,
+    transparent 65%,
+    rgba(0,0,0,.28)
+  );
+}
+
+.banner-container img{
+  width:100%;
+  display:block;
+  object-fit:contain;
+}
+
+/* ================= HEADER ================= */
+
+.header-status{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+
+  padding:9px 11px;
+  margin-bottom:9px;
+
+  background:rgba(255,255,255,.025);
+  border:1px solid var(--line);
+  border-radius:12px;
+}
+
+.live-status{
+  display:flex;
+  align-items:center;
+  gap:7px;
+
+  color:#75f5c3;
+  font-size:9px;
+  font-weight:900;
+  letter-spacing:.8px;
+}
+
+.live-dot{
+  width:7px;
+  height:7px;
+  border-radius:50%;
+  background:var(--green);
+
+  box-shadow:0 0 10px var(--green);
+
+  animation:pulse 1.5s infinite;
+}
+
+@keyframes pulse{
+  0%,100%{opacity:1}
+  50%{opacity:.35}
+}
+
+.clock{
+  color:var(--muted);
+  font-size:9px;
+  font-weight:800;
+}
+
+.version-wrap{
+  text-align:center;
+  margin-top:7px;
+}
+
+.version-badge{
+  display:inline-flex;
+  align-items:center;
+  gap:7px;
+
+  padding:7px 12px;
+
+  border-radius:999px;
+
+  border:1px solid rgba(59,130,246,.25);
+  background:rgba(59,130,246,.07);
+
+  color:#74b5ff;
+
+  font-size:9px;
+  font-weight:900;
+  letter-spacing:.7px;
+}
+
+.title{
+  text-align:center;
+  padding:13px 0 16px;
+}
+
+.title h1{
+  margin:0 0 5px;
+
+  font-size:22px;
+  font-weight:950;
+  letter-spacing:-.5px;
+}
+
+.title h1 i{
+  color:#60a5fa;
+}
+
+.title p{
+  margin:0;
+  color:var(--muted);
+  font-size:10px;
+}
+
+/* ================= STATS ================= */
+
+.stats{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:7px;
+
+  margin-bottom:13px;
+}
+
+.stat{
+  padding:11px 4px;
+  text-align:center;
+
+  background:linear-gradient(145deg,#0e141e,#080c13);
+
+  border:1px solid var(--line);
+  border-radius:14px;
+}
+
+.stat b{
+  display:block;
+  font-size:16px;
+  font-weight:950;
+}
+
+.stat span{
+  display:block;
+  margin-top:2px;
+
+  color:var(--muted);
+  font-size:8px;
+  font-weight:800;
+  letter-spacing:.5px;
+}
+
+/* ================= CONTROLS ================= */
+
+.controls{
+  display:grid;
+  grid-template-columns:1.25fr .75fr;
+  gap:8px;
+
+  margin-bottom:9px;
+}
+
+label{
+  display:block;
+
+  margin:0 0 5px 3px;
+
+  color:#707b8c;
+  font-size:8px;
+  font-weight:900;
+  letter-spacing:1px;
+}
+
+select{
+  width:100%;
+
+  padding:12px 10px;
+
+  color:#fff;
+  background:#070b11;
+
+  border:1px solid var(--line);
+  border-radius:12px;
+
+  outline:none;
+  font-size:11px;
+  font-weight:700;
+}
+
+select:focus{
+  border-color:rgba(59,130,246,.5);
+}
+
+/* ================= SCAN BUTTON ================= */
+
+.scan-btn{
+  position:relative;
+
+  width:100%;
+  margin-bottom:12px;
+
+  padding:14px;
+
+  border:1px solid rgba(96,165,250,.25);
+  border-radius:14px;
+
+  color:#fff;
+
+  background:
+    linear-gradient(135deg,#2563eb,#4f46e5 55%,#7c3aed);
+
+  font-weight:950;
+  letter-spacing:.7px;
+
+  cursor:pointer;
+
+  box-shadow:
+    0 12px 30px rgba(37,99,235,.20),
+    inset 0 1px 0 rgba(255,255,255,.12);
+
+  transition:.2s;
+}
+
+.scan-btn:active{
+  transform:scale(.985);
+}
+
+.scan-btn:disabled{
+  opacity:.55;
+  cursor:wait;
+}
+
+/* ================= SIGNAL CARD ================= */
+
+.signal-card{
+  padding:16px;
+
+  background:
+    linear-gradient(145deg,#0d141e,#070b11);
+
+  border:1px solid var(--line);
+  border-radius:21px;
+
+  margin-bottom:12px;
+
+  box-shadow:0 15px 40px rgba(0,0,0,.22);
+}
+
+.signal-top{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:8px;
+}
+
+.pill{
+  max-width:48%;
+
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+
+  padding:6px 9px;
+
+  border-radius:999px;
+
+  background:rgba(255,255,255,.045);
+  border:1px solid rgba(255,255,255,.04);
+
+  color:var(--muted);
+
+  font-size:8px;
+  font-weight:900;
+  letter-spacing:.5px;
+}
+
+.pill.live{
+  color:#70f2c0;
+  background:rgba(16,185,129,.07);
+}
+
+.signal-direction{
+  min-height:50px;
+
+  display:flex;
+  align-items:center;
+  justify-content:center;
+
+  padding:16px 0 4px;
+
+  font-size:36px;
+  font-weight:1000;
+  letter-spacing:2px;
+}
+
+.CALL{
+  color:var(--green);
+  text-shadow:0 0 25px rgba(0,214,143,.18);
+}
+
+.PUT{
+  color:var(--red);
+  text-shadow:0 0 25px rgba(255,69,103,.18);
+}
+
+.WAIT{
+  color:var(--yellow);
+}
+
+.ERROR{
+  color:#94a3b8;
+  font-size:27px;
+}
+
+.confidence{
+  text-align:center;
+
+  color:var(--muted);
+
+  font-size:10px;
+  font-weight:700;
+}
+
+.timer{
+  text-align:center;
+
+  margin-top:9px;
+
+  color:#cbd5e1;
+
+  font-size:11px;
+  font-weight:800;
+}
+
+/* ================= ENGINE ================= */
+
+.section-title{
+  margin:15px 0 7px;
+
+  color:#657184;
+
+  font-size:8px;
+  font-weight:950;
+  letter-spacing:1.2px;
+}
+
+.grid{
+  display:grid;
+  grid-template-columns:repeat(2,1fr);
+  gap:7px;
+}
+
+.metric{
+  min-height:55px;
+
+  padding:9px;
+
+  background:rgba(255,255,255,.022);
+
+  border:1px solid rgba(255,255,255,.055);
+  border-radius:12px;
+}
+
+.metric span{
+  display:block;
+
+  margin-bottom:5px;
+
+  color:#687487;
+  font-size:8px;
+  font-weight:700;
+}
+
+.metric b{
+  display:block;
+
+  color:#e8edf5;
+
+  font-size:11px;
+  font-weight:900;
+
+  word-break:break-word;
+}
+
+/* ================= MARKET STATUS ================= */
+
+.status{
+  min-height:42px;
+
+  padding:10px 11px;
+
+  background:rgba(255,255,255,.025);
+
+  border:1px solid rgba(255,255,255,.045);
+  border-radius:11px;
+
+  color:#b9c3d0;
+
+  font-size:9px;
+  line-height:1.55;
+}
+
+/* ================= TV ================= */
+
+.widget-container{
+  height:380px;
+
+  overflow:hidden;
+
+  margin-bottom:12px;
+
+  background:#070b11;
+
+  border:1px solid var(--line);
+  border-radius:18px;
+}
+
+/* ================= TRADE BUTTONS ================= */
+
+.trade-buttons{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:8px;
+}
+
+.trade-buttons button{
+  padding:12px;
+
+  border:1px solid rgba(255,255,255,.05);
+  border-radius:12px;
+
+  color:#fff;
+
+  font-weight:950;
+  font-size:10px;
+
+  cursor:pointer;
+}
+
+.win{
+  background:linear-gradient(135deg,#059669,#047857);
+}
+
+.loss{
+  background:linear-gradient(135deg,#dc2626,#b91c1c);
+}
+
+/* ================= FOOTER ================= */
+
+.footer{
+  margin-top:13px;
+
+  text-align:center;
+
+  color:#4e5969;
+
+  font-size:8px;
+  line-height:1.6;
+}
+
+/* ================= MOBILE ================= */
+
+@media(max-width:380px){
+  body{padding:9px}
+
+  .dashboard{
+    padding:10px;
+    border-radius:22px;
+  }
+
+  .stats{
+    grid-template-columns:repeat(2,1fr);
+  }
+
+  .controls{
+    grid-template-columns:1fr;
+  }
+
+  .signal-direction{
+    font-size:31px;
+  }
+}
 </style>
 </head>
 
 <body>
 
+<!-- ================= LOCK SCREEN ================= -->
+
 <div id="lock-screen">
- <div class="lock-card">
-  <i class="fab fa-whatsapp"></i>
-  <h2>Community Access Locked</h2>
-  <p>Accessing <b>AK Premium Bot</b> requires joining our Official WhatsApp Community.</p>
-  <a href="https://chat.whatsapp.com/HOOyD7NhzWWIhAq4LRuJZt" target="_blank" class="btn-whatsapp" id="unlock-btn">
-   <i class="fab fa-whatsapp"></i> Join Community To Unlock
-  </a>
- </div>
+
+  <div class="lock-card">
+
+    <div class="lock-icon">
+      <i class="fab fa-whatsapp"></i>
+    </div>
+
+    <h2>
+      <span class="premium">AK Premium</span>
+      Community Access
+    </h2>
+
+    <p>
+      Access to the <b>AK Institutional Scalper</b> requires joining
+      our official WhatsApp community.
+    </p>
+
+    <a
+      href="https://chat.whatsapp.com/HOOyD7NhzWWIhAq4LRuJZt"
+      target="_blank"
+      rel="noopener"
+      class="btn-whatsapp"
+      id="unlock-btn"
+    >
+      <i class="fab fa-whatsapp"></i>
+      Join Community To Unlock
+    </a>
+
+  </div>
+
 </div>
+
+
+<!-- ================= DASHBOARD ================= -->
 
 <div class="dashboard">
 
- <div class="banner-container">
-  <img src="IMG-20261005-WA3898.jpg" alt="AK Premium Bot">
- </div>
-
- <div style="text-align:center">
-  <span class="version-badge"><i class="fas fa-microchip"></i> AK INSTITUTIONAL SCALPER v21.0</span>
- </div>
-
- <div class="title">
-  <h1><i class="fas fa-chart-line" style="color:#6366f1"></i> AK Pro Candle Scalper</h1>
-  <p>Multi-Timeframe Technical Confirmation Engine</p>
- </div>
-
- <div class="stats">
-  <div class="stat"><b id="total-trades" style="color:#60a5fa">0</b><span>Total</span></div>
-  <div class="stat"><b id="wins" style="color:var(--green)">0</b><span>Wins</span></div>
-  <div class="stat"><b id="losses" style="color:var(--red)">0</b><span>Losses</span></div>
-  <div class="stat"><b id="win-rate" style="color:var(--yellow)">0%</b><span>Win Rate</span></div>
- </div>
-
- <div class="controls">
-  <div>
-   <label>TRADING PAIR</label>
-   <select id="pair" onchange="resetUI();updateTVWidget()">
-    <option value="EURUSD">EUR/USD</option>
-    <option value="EURJPY">EUR/JPY</option>
-    <option value="USDJPY">USD/JPY</option>
-    <option value="GBPUSD">GBP/USD</option>
-    <option value="AUDCHF">AUD/CHF</option>
-    <option value="AUDJPY">AUD/JPY</option>
-    <option value="CHFJPY">CHF/JPY</option>
-    <option value="EURCHF">EUR/CHF</option>
-    <option value="GBPAUD">GBP/AUD</option>
-    <option value="AUDCAD">AUD/CAD</option>
-    <option value="EURAUD">EUR/AUD</option>
-    <option value="EURCAD">EUR/CAD</option>
-    <option value="AUDUSD">AUD/USD</option>
-    <option value="GBPCAD">GBP/CAD</option>
-    <option value="GBPCHF">GBP/CHF</option>
-    <option value="USDCAD">USD/CAD</option>
-    <option value="USDCHF">USD/CHF</option>
-    <option value="NZDUSD">NZD/USD</option>
-    <option value="GBPJPY">GBP/JPY</option>
-    <option value="EURGBP">EUR/GBP</option>
-    <option value="BTCUSDT">BTC/USDT</option>
-    <option value="ETHUSDT">ETH/USDT</option>
-   </select>
+  <!-- Banner -->
+  <div class="banner-container">
+    <img
+      src="IMG-20261005-WA3898.jpg"
+      alt="AK Premium Bot"
+    >
   </div>
 
-  <div>
-   <label>TIMEFRAME</label>
-   <select id="tf" onchange="resetUI();updateTVWidget()">
-    <option value="1m">1 Minute</option>
-    <option value="5m">5 Minutes</option>
-   </select>
-  </div>
- </div>
 
- <button class="scan-btn" id="scan-btn" onclick="fetchAndAnalyze()">
-  <i class="fas fa-radar"></i> SCAN MARKET
- </button>
+  <!-- Header status -->
+  <div class="header-status">
 
- <div class="signal-card">
-  <div class="signal-top">
-   <span class="pill" id="feed-pill">FEED: --</span>
-   <span class="pill" id="bias-pill">MTF: --</span>
+    <div class="live-status">
+      <span class="live-dot"></span>
+      ENGINE ONLINE
+    </div>
+
+    <div class="clock" id="clock">
+      --:--:--
+    </div>
+
   </div>
 
-  <div class="signal-direction" id="signal-dir">READY</div>
-  <div class="confidence" id="acc-badge">Analysis confidence: --</div>
-  <div class="timer" id="timer-box">Next candle entry in: --</div>
 
-  <div class="section-title">ENGINE METRICS</div>
-  <div class="grid">
-   <div class="metric"><span>Technical Signal</span><b id="tech-signal">--</b></div>
-   <div class="metric"><span>Technical Score</span><b id="tech-score">--</b></div>
-   <div class="metric"><span>AI Confirmation</span><b id="ai-signal">--</b></div>
-   <div class="metric"><span>AI Score</span><b id="ai-score">--</b></div>
-   <div class="metric"><span>EMA 9 / 21 / 50</span><b id="ema-val">--</b></div>
-   <div class="metric"><span>RSI</span><b id="rsi-val">--</b></div>
-   <div class="metric"><span>MACD</span><b id="macd-val">--</b></div>
-   <div class="metric"><span>Feed Age</span><b id="feed-age">--</b></div>
+  <!-- Version -->
+  <div class="version-wrap">
+    <span class="version-badge">
+      <i class="fas fa-microchip"></i>
+      AK INSTITUTIONAL SCALPER v22.0
+    </span>
   </div>
 
-  <div class="section-title">MARKET STATUS</div>
-  <div class="status" id="filter-result">Waiting for scan...</div>
- </div>
 
- <div class="widget-container" id="tv-widget-holder"></div>
+  <!-- Title -->
+  <div class="title">
 
- <div class="trade-buttons">
-  <button class="win" onclick="recordTrade(true)"><i class="fas fa-check-circle"></i> WIN</button>
-  <button class="loss" onclick="recordTrade(false)"><i class="fas fa-times-circle"></i> LOSS</button>
- </div>
+    <h1>
+      <i class="fas fa-chart-line"></i>
+      AK Pro Candle Scalper
+    </h1>
 
- <div class="footer">
-  AK Pro Candle Scalper v21.0 • Technical confirmation only<br>
-  No signal can guarantee a winning trade.
- </div>
+    <p>
+      Multi-Timeframe Institutional Confirmation Engine
+    </p>
+
+  </div>
+
+
+  <!-- Stats -->
+  <div class="stats">
+
+    <div class="stat">
+      <b id="total-trades" style="color:#60a5fa">0</b>
+      <span>Total</span>
+    </div>
+
+    <div class="stat">
+      <b id="wins" style="color:var(--green)">0</b>
+      <span>Wins</span>
+    </div>
+
+    <div class="stat">
+      <b id="losses" style="color:var(--red)">0</b>
+      <span>Losses</span>
+    </div>
+
+    <div class="stat">
+      <b id="win-rate" style="color:var(--yellow)">0%</b>
+      <span>Win Rate</span>
+    </div>
+
+  </div>
+
+
+  <!-- Controls -->
+  <div class="controls">
+
+    <div>
+
+      <label>TRADING PAIR</label>
+
+      <select id="pair">
+
+        <option value="EURUSD">EUR/USD</option>
+        <option value="EURJPY">EUR/JPY</option>
+        <option value="USDJPY">USD/JPY</option>
+        <option value="GBPUSD">GBP/USD</option>
+        <option value="AUDCHF">AUD/CHF</option>
+        <option value="AUDJPY">AUD/JPY</option>
+        <option value="CHFJPY">CHF/JPY</option>
+        <option value="EURCHF">EUR/CHF</option>
+        <option value="GBPAUD">GBP/AUD</option>
+        <option value="AUDCAD">AUD/CAD</option>
+        <option value="EURAUD">EUR/AUD</option>
+        <option value="EURCAD">EUR/CAD</option>
+        <option value="AUDUSD">AUD/USD</option>
+        <option value="GBPCAD">GBP/CAD</option>
+        <option value="GBPCHF">GBP/CHF</option>
+        <option value="USDCAD">USD/CAD</option>
+        <option value="USDCHF">USD/CHF</option>
+        <option value="NZDUSD">NZD/USD</option>
+        <option value="GBPJPY">GBP/JPY</option>
+        <option value="EURGBP">EUR/GBP</option>
+
+        <option value="BTCUSDT">BTC/USDT</option>
+        <option value="ETHUSDT">ETH/USDT</option>
+
+      </select>
+
+    </div>
+
+
+    <div>
+
+      <label>TIMEFRAME</label>
+
+      <select id="tf">
+
+        <option value="1m">1 Minute</option>
+        <option value="5m">5 Minutes</option>
+
+      </select>
+
+    </div>
+
+  </div>
+
+
+  <!-- Scan -->
+  <button class="scan-btn" id="scan-btn">
+
+    <i class="fas fa-radar"></i>
+    <span id="scan-text">SCAN MARKET</span>
+
+  </button>
+
+
+  <!-- Signal Card -->
+  <div class="signal-card">
+
+    <div class="signal-top">
+
+      <span class="pill live" id="feed-pill">
+        FEED: --
+      </span>
+
+      <span class="pill" id="bias-pill">
+        MTF: --
+      </span>
+
+    </div>
+
+
+    <div
+      class="signal-direction"
+      id="signal-dir"
+    >
+      READY
+    </div>
+
+
+    <div
+      class="confidence"
+      id="acc-badge"
+    >
+      Analysis confidence: --
+    </div>
+
+
+    <div
+      class="timer"
+      id="timer-box"
+    >
+      Next candle entry in: --
+    </div>
+
+
+    <!-- Engine -->
+    <div class="section-title">
+      ENGINE METRICS
+    </div>
+
+
+    <div class="grid">
+
+      <div class="metric">
+        <span>Technical Signal</span>
+        <b id="tech-signal">--</b>
+      </div>
+
+      <div class="metric">
+        <span>Technical Score</span>
+        <b id="tech-score">--</b>
+      </div>
+
+      <div class="metric">
+        <span>AI Confirmation</span>
+        <b id="ai-signal">--</b>
+      </div>
+
+      <div class="metric">
+        <span>AI Score</span>
+        <b id="ai-score">--</b>
+      </div>
+
+      <div class="metric">
+        <span>EMA 9 / 21 / 50</span>
+        <b id="ema-val">--</b>
+      </div>
+
+      <div class="metric">
+        <span>RSI</span>
+        <b id="rsi-val">--</b>
+      </div>
+
+      <div class="metric">
+        <span>MACD Histogram</span>
+        <b id="macd-val">--</b>
+      </div>
+
+      <div class="metric">
+        <span>Feed Age</span>
+        <b id="feed-age">--</b>
+      </div>
+
+    </div>
+
+
+    <!-- Extra backend data -->
+    <div class="section-title">
+      MARKET DATA
+    </div>
+
+    <div class="grid">
+
+      <div class="metric">
+        <span>Price</span>
+        <b id="price-val">--</b>
+      </div>
+
+      <div class="metric">
+        <span>ATR</span>
+        <b id="atr-val">--</b>
+      </div>
+
+      <div class="metric">
+        <span>Support</span>
+        <b id="support-val">--</b>
+      </div>
+
+      <div class="metric">
+        <span>Resistance</span>
+        <b id="resistance-val">--</b>
+      </div>
+
+    </div>
+
+
+    <!-- Status -->
+    <div class="section-title">
+      MARKET STATUS
+    </div>
+
+    <div
+      class="status"
+      id="filter-result"
+    >
+      Waiting for market scan...
+    </div>
+
+  </div>
+
+
+  <!-- TradingView -->
+  <div
+    class="widget-container"
+    id="tv-widget-holder"
+  ></div>
+
+
+  <!-- Manual Result -->
+  <div class="trade-buttons">
+
+    <button
+      class="win"
+      id="win-btn"
+    >
+      <i class="fas fa-check-circle"></i>
+      WIN
+    </button>
+
+    <button
+      class="loss"
+      id="loss-btn"
+    >
+      <i class="fas fa-times-circle"></i>
+      LOSS
+    </button>
+
+  </div>
+
+
+  <div class="footer">
+
+    AK Pro Candle Scalper v22.0 • Technical confirmation engine<br>
+
+    Signals are analytical only. No signal can guarantee a winning trade.
+
+  </div>
+
 </div>
 
+
 <script>
-let total=0,wins=0,losses=0,timerInterval=null;
-const BACKEND_URL="https://ak-binary-bot.vercel.app/api/scan";
+
+/* =========================================================
+   AK INSTITUTIONAL SCALPER v22.0
+   Frontend compatible with new api/scan.js
+========================================================= */
+
+
+/* ================= CONFIG ================= */
+
+const BACKEND_URL =
+  "https://ak-binary-bot.vercel.app/api/scan";
+
+let total = 0;
+let wins = 0;
+let losses = 0;
+
+let timerInterval = null;
+let autoScanInterval = null;
+
+let isScanning = false;
+
+
+/* ================= ELEMENTS ================= */
+
+const $ = id =>
+  document.getElementById(id);
+
+
+/* ================= LOCK ================= */
 
 function checkLockStatus(){
- const lock=document.getElementById("lock-screen");
- if(localStorage.getItem("ak_bot_wa_unlocked")==="true") lock.style.display="none";
+
+  const lock = $("lock-screen");
+
+  if(
+    localStorage.getItem("ak_bot_wa_unlocked") === "true"
+  ){
+
+    lock.style.display = "none";
+
+  }
+
 }
-document.getElementById("unlock-btn").addEventListener("click",()=>{
- localStorage.setItem("ak_bot_wa_unlocked","true");
- document.getElementById("lock-screen").style.display="none";
+
+
+$("unlock-btn").addEventListener("click",()=>{
+
+  localStorage.setItem(
+    "ak_bot_wa_unlocked",
+    "true"
+  );
+
+  $("lock-screen").style.display = "none";
+
+  setTimeout(fetchAndAnalyze,500);
+
 });
 
-function resetUI(){
- clearInterval(timerInterval);
- document.getElementById("signal-dir").className="signal-direction";
- document.getElementById("signal-dir").innerText="READY";
- document.getElementById("acc-badge").innerText="Analysis confidence: --";
- document.getElementById("timer-box").innerText="Next candle entry in: --";
- ["tech-signal","tech-score","ai-signal","ai-score","ema-val","rsi-val","macd-val","feed-age"].forEach(id=>document.getElementById(id).innerText="--");
- document.getElementById("feed-pill").innerText="FEED: --";
- document.getElementById("bias-pill").innerText="MTF: --";
- document.getElementById("filter-result").innerText="Waiting for scan...";
+
+/* ================= CLOCK ================= */
+
+function updateClock(){
+
+  const now = new Date();
+
+  $("clock").innerText =
+    now.toLocaleTimeString(
+      [],
+      {
+        hour:"2-digit",
+        minute:"2-digit",
+        second:"2-digit"
+      }
+    );
+
 }
+
+setInterval(updateClock,1000);
+updateClock();
+
+
+/* ================= FORMAT ================= */
+
+function fmt(value, decimals=2){
+
+  const n = Number(value);
+
+  if(!Number.isFinite(n))
+    return "--";
+
+  return n.toFixed(decimals);
+
+}
+
+
+function priceDecimals(pair){
+
+  if(pair.includes("JPY"))
+    return 3;
+
+  if(pair.includes("BTC"))
+    return 2;
+
+  if(pair.includes("ETH"))
+    return 2;
+
+  return 5;
+
+}
+
+
+/* ================= RESET UI ================= */
+
+function resetUI(){
+
+  clearInterval(timerInterval);
+
+  $("signal-dir").className =
+    "signal-direction";
+
+  $("signal-dir").innerText =
+    "READY";
+
+  $("acc-badge").innerText =
+    "Analysis confidence: --";
+
+  $("timer-box").innerText =
+    "Next candle entry in: --";
+
+  $("feed-pill").innerText =
+    "FEED: --";
+
+  $("bias-pill").innerText =
+    "MTF: --";
+
+  $("filter-result").innerText =
+    "Waiting for market scan...";
+
+  $("filter-result").style.color =
+    "#b9c3d0";
+
+  [
+    "tech-signal",
+    "tech-score",
+    "ai-signal",
+    "ai-score",
+    "ema-val",
+    "rsi-val",
+    "macd-val",
+    "feed-age",
+    "price-val",
+    "atr-val",
+    "support-val",
+    "resistance-val"
+  ].forEach(id=>{
+
+    $(id).innerText = "--";
+
+  });
+
+}
+
+
+/* ================= TRADINGVIEW ================= */
 
 function updateTVWidget(){
- const pair=document.getElementById("pair").value;
- const tf=document.getElementById("tf").value;
- const holder=document.getElementById("tv-widget-holder");
- holder.innerHTML="";
- const symbol=pair.includes("USDT")?`BINANCE:${pair}`:`FX_IDC:${pair}`;
- const script=document.createElement("script");
- script.src="https://s3.tradingview.com/external-embedding/embed-widget-technical-analysis.js";
- script.async=true;
- script.innerHTML=JSON.stringify({
-  interval:tf,width:"100%",height:"100%",isTransparent:true,
-  symbol,showIntervalTabs:false,displayMode:"single",locale:"en",colorTheme:"dark"
- });
- holder.appendChild(script);
+
+  const pair =
+    $("pair").value;
+
+  const tf =
+    $("tf").value;
+
+  const holder =
+    $("tv-widget-holder");
+
+  holder.innerHTML = "";
+
+  const symbol =
+    pair.includes("USDT")
+      ? `BINANCE:${pair}`
+      : `FX_IDC:${pair}`;
+
+  const script =
+    document.createElement("script");
+
+  script.src =
+    "https://s3.tradingview.com/external-embedding/embed-widget-technical-analysis.js";
+
+  script.async = true;
+
+  script.innerHTML =
+    JSON.stringify({
+
+      interval: tf,
+
+      width:"100%",
+
+      height:"100%",
+
+      isTransparent:true,
+
+      symbol:symbol,
+
+      showIntervalTabs:false,
+
+      displayMode:"single",
+
+      locale:"en",
+
+      colorTheme:"dark"
+
+    });
+
+  holder.appendChild(script);
+
 }
 
-async function fetchBackend(pair,timeframe){
- const controller=new AbortController();
- const timeout=setTimeout(()=>controller.abort(),25000);
- try{
-  const url=`${BACKEND_URL}?pair=${encodeURIComponent(pair)}&timeframe=${encodeURIComponent(timeframe)}`;
-  const res=await fetch(url,{method:"GET",signal:controller.signal});
-  clearTimeout(timeout);
-  if(!res.ok) throw new Error(`HTTP ${res.status}`);
-  return await res.json();
- }catch(e){
-  clearTimeout(timeout);
-  console.error(e);
-  return null;
- }
+
+/* ================= BACKEND ================= */
+
+async function fetchBackend(
+  pair,
+  timeframe
+){
+
+  const controller =
+    new AbortController();
+
+  const timeout =
+    setTimeout(
+      ()=>controller.abort(),
+      22000
+    );
+
+  try{
+
+    const url =
+      `${BACKEND_URL}` +
+      `?pair=${encodeURIComponent(pair)}` +
+      `&timeframe=${encodeURIComponent(timeframe)}`;
+
+    const response =
+      await fetch(
+        url,
+        {
+          method:"GET",
+          signal:controller.signal,
+          cache:"no-store"
+        }
+      );
+
+    clearTimeout(timeout);
+
+    if(!response.ok){
+
+      throw new Error(
+        `HTTP ${response.status}`
+      );
+
+    }
+
+    return await response.json();
+
+  }catch(error){
+
+    clearTimeout(timeout);
+
+    console.error(
+      "AK Backend Error:",
+      error
+    );
+
+    return null;
+
+  }
+
 }
 
-function fmt(n,d=2){
- return Number.isFinite(Number(n))?Number(n).toFixed(d):"--";
-}
+
+/* ================= CANDLE TIMER ================= */
 
 function startTimer(){
- clearInterval(timerInterval);
- const tf=document.getElementById("tf").value;
- timerInterval=setInterval(()=>{
-  const now=new Date();
-  const sec=now.getSeconds();
-  let left;
-  if(tf==="5m") left=300-((now.getMinutes()%5)*60+sec);
-  else left=60-sec;
-  document.getElementById("timer-box").innerText=`Next candle entry in: ${left}s`;
- },1000);
+
+  clearInterval(timerInterval);
+
+  function update(){
+
+    const tf =
+      $("tf").value;
+
+    const now =
+      new Date();
+
+    let secondsLeft;
+
+    if(tf === "5m"){
+
+      secondsLeft =
+        300 -
+        (
+          (now.getMinutes() % 5) * 60
+          + now.getSeconds()
+        );
+
+    }else{
+
+      secondsLeft =
+        60 - now.getSeconds();
+
+    }
+
+    if(secondsLeft <= 0)
+      secondsLeft = 1;
+
+    $("timer-box").innerText =
+      `Next candle entry in: ${secondsLeft}s`;
+
+  }
+
+  update();
+
+  timerInterval =
+    setInterval(update,1000);
+
 }
+
+
+/* ================= RENDER SIGNAL ================= */
+
+function renderSignal(data){
+
+  const pair =
+    $("pair").value;
+
+  const signal =
+    String(
+      data.signal || "WAIT"
+    ).toUpperCase();
+
+  const score =
+    Number(data.score || 0);
+
+
+  /* Direction */
+
+  $("signal-dir").className =
+    "signal-direction " +
+    (
+      signal === "CALL"
+      || signal === "PUT"
+      || signal === "WAIT"
+        ? signal
+        : "ERROR"
+    );
+
+  $("signal-dir").innerText =
+    signal;
+
+
+  /* Confidence */
+
+  $("acc-badge").innerText =
+    `Analysis confidence: ${
+      Number.isFinite(score)
+        ? score
+        : "--"
+    }%`;
+
+
+  /* Technical */
+
+  $("tech-signal").innerText =
+    data.technicalSignal || "--";
+
+  $("tech-score").innerText =
+    data.technicalScore != null
+      ? `${data.technicalScore}%`
+      : "--";
+
+
+  /* AI */
+
+  $("ai-signal").innerText =
+    data.aiSignal || "--";
+
+  $("ai-score").innerText =
+    data.aiScore != null
+      ? `${data.aiScore}%`
+      : "--";
+
+
+  /* EMA */
+
+  const decimals =
+    priceDecimals(pair);
+
+  $("ema-val").innerText =
+    `${fmt(data.ema9,decimals)} / ` +
+    `${fmt(data.ema21,decimals)} / ` +
+    `${fmt(data.ema50,decimals)}`;
+
+
+  /* RSI */
+
+  $("rsi-val").innerText =
+    data.rsi != null
+      ? fmt(data.rsi,1)
+      : "--";
+
+
+  /* MACD */
+
+  $("macd-val").innerText =
+    data.macd &&
+    data.macd.histogram != null
+      ? fmt(data.macd.histogram,6)
+      : "--";
+
+
+  /* Feed age */
+
+  $("feed-age").innerText =
+    data.feedAgeSeconds != null
+      ? `${data.feedAgeSeconds}s`
+      : "--";
+
+
+  /* Feed */
+
+  $("feed-pill").innerText =
+    `FEED: ${data.dataSource || "--"}`;
+
+
+  /* MTF */
+
+  $("bias-pill").innerText =
+    `MTF: ${data.higherTimeframeBias || "--"}`;
+
+
+  /* Price */
+
+  $("price-val").innerText =
+    data.price != null
+      ? fmt(data.price,decimals)
+      : "--";
+
+
+  /* ATR */
+
+  $("atr-val").innerText =
+    data.atr != null
+      ? fmt(data.atr,decimals)
+      : "--";
+
+
+  /* Support */
+
+  $("support-val").innerText =
+    data.support != null
+      ? fmt(data.support,decimals)
+      : "--";
+
+
+  /* Resistance */
+
+  $("resistance-val").innerText =
+    data.resistance != null
+      ? fmt(data.resistance,decimals)
+      : "--";
+
+
+  /* Reason */
+
+  let reason =
+    data.aiReason ||
+    data.reason ||
+    "Market analysis completed.";
+
+  if(data.warning){
+
+    reason +=
+      ` ${data.warning}`;
+
+  }
+
+  $("filter-result").innerText =
+    reason;
+
+
+  /* Status */
+
+  if(signal === "CALL"){
+
+    $("filter-result").style.color =
+      "#79f5c5";
+
+  }
+  else if(signal === "PUT"){
+
+    $("filter-result").style.color =
+      "#ff8da4";
+
+  }
+  else{
+
+    $("filter-result").style.color =
+      "var(--yellow)";
+
+  }
+
+
+  /* Timer */
+
+  if(
+    signal === "CALL" ||
+    signal === "PUT"
+  ){
+
+    startTimer();
+
+  }else{
+
+    $("timer-box").innerText =
+      "No confirmed entry";
+
+  }
+
+}
+
+
+/* ================= MAIN SCAN ================= */
 
 async function fetchAndAnalyze(){
- const btn=document.getElementById("scan-btn");
- const dir=document.getElementById("signal-dir");
- const pair=document.getElementById("pair").value;
- const tf=document.getElementById("tf").value;
 
- btn.disabled=true;
- dir.className="signal-direction";
- dir.innerText="SCANNING...";
- document.getElementById("filter-result").innerText="Fetching closed candles + multi-timeframe confirmation...";
- clearInterval(timerInterval);
+  if(isScanning)
+    return;
 
- const data=await fetchBackend(pair,tf);
+  isScanning = true;
 
- btn.disabled=false;
+  const btn =
+    $("scan-btn");
 
- if(!data||data.ok===false){
-  dir.className="signal-direction WAIT";
-  dir.innerText="WAIT";
-  document.getElementById("acc-badge").innerText="No valid signal";
-  document.getElementById("filter-result").innerText=data?.error||"Backend/data unavailable. No trade.";
-  return;
- }
+  const scanText =
+    $("scan-text");
 
- const signal=data.signal||"WAIT";
- const score=Number(data.score||0);
+  const pair =
+    $("pair").value;
 
- dir.className=`signal-direction ${signal}`;
- dir.innerText=signal;
- document.getElementById("acc-badge").innerText=`Analysis confidence: ${score}%`;
+  const tf =
+    $("tf").value;
 
- document.getElementById("tech-signal").innerText=data.technicalSignal||"--";
- document.getElementById("tech-score").innerText=data.technicalScore!=null?`${data.technicalScore}%`:"--";
- document.getElementById("ai-signal").innerText=data.aiSignal||"--";
- document.getElementById("ai-score").innerText=data.aiScore!=null?`${data.aiScore}%`:"--";
 
- document.getElementById("ema-val").innerText=
-  `${fmt(data.ema9,5)} / ${fmt(data.ema21,5)} / ${fmt(data.ema50,5)}`;
+  btn.disabled = true;
 
- document.getElementById("rsi-val").innerText=
-  data.rsi!=null?fmt(data.rsi,1):"--";
+  scanText.innerText =
+    "ANALYZING...";
 
- document.getElementById("macd-val").innerText=
-  data.macd?.histogram!=null?fmt(data.macd.histogram,6):"--";
+  $("signal-dir").className =
+    "signal-direction";
 
- document.getElementById("feed-age").innerText=
-  data.feedAgeSeconds!=null?`${data.feedAgeSeconds}s`:"--";
+  $("signal-dir").innerText =
+    "SCANNING";
 
- document.getElementById("feed-pill").innerText=
-  `FEED: ${data.dataSource||"--"}`;
+  $("filter-result").innerText =
+    "Fetching closed candles + technical confirmation + MTF analysis...";
 
- document.getElementById("bias-pill").innerText=
-  `MTF: ${data.higherTimeframeBias||"--"}`;
+  $("filter-result").style.color =
+    "#b9c3d0";
 
- let reason=data.aiReason||data.reason||"Analysis complete.";
- if(data.warning) reason+=` ${data.warning}`;
 
- document.getElementById("filter-result").innerText=reason;
+  const data =
+    await fetchBackend(
+      pair,
+      tf
+    );
 
- if(signal==="WAIT"){
-  document.getElementById("filter-result").style.color="var(--yellow)";
-  document.getElementById("timer-box").innerText="No entry — wait for a confirmed setup.";
- }else{
-  document.getElementById("filter-result").style.color="#cbd5e1";
-  startTimer();
- }
+
+  btn.disabled = false;
+
+  scanText.innerText =
+    "SCAN MARKET";
+
+  isScanning = false;
+
+
+  /* Backend unavailable */
+
+  if(!data){
+
+    $("signal-dir").className =
+      "signal-direction ERROR";
+
+    $("signal-dir").innerText =
+      "OFFLINE";
+
+    $("acc-badge").innerText =
+      "Backend unavailable";
+
+    $("filter-result").innerText =
+      "API connection failed or timed out. Check the Vercel API.";
+
+    $("filter-result").style.color =
+      "#94a3b8";
+
+    $("timer-box").innerText =
+      "No market data";
+
+    return;
+
+  }
+
+
+  /* Render backend response */
+
+  renderSignal(data);
+
 }
+
+
+/* ================= AUTO SCAN ================= */
+
+function startAutoScan(){
+
+  clearInterval(autoScanInterval);
+
+  const tf =
+    $("tf").value;
+
+
+  /*
+    1m:
+    scan once per minute
+
+    5m:
+    scan every 2 minutes
+
+    This avoids hammering the Gemini/API
+    unnecessarily.
+  */
+
+  const interval =
+    tf === "5m"
+      ? 120000
+      : 60000;
+
+
+  autoScanInterval =
+    setInterval(
+      ()=>{
+
+        if(
+          document.visibilityState === "visible"
+        ){
+
+          fetchAndAnalyze();
+
+        }
+
+      },
+      interval
+    );
+
+}
+
+
+/* ================= CHANGE HANDLERS ================= */
+
+$("pair").addEventListener(
+  "change",
+  ()=>{
+
+    resetUI();
+
+    updateTVWidget();
+
+    setTimeout(
+      fetchAndAnalyze,
+      400
+    );
+
+  }
+);
+
+
+$("tf").addEventListener(
+  "change",
+  ()=>{
+
+    resetUI();
+
+    updateTVWidget();
+
+    startAutoScan();
+
+    setTimeout(
+      fetchAndAnalyze,
+      400
+    );
+
+  }
+);
+
+
+/* ================= SCAN BUTTON ================= */
+
+$("scan-btn").addEventListener(
+  "click",
+  fetchAndAnalyze
+);
+
+
+/* ================= LOCAL STATS ================= */
+
+function loadStats(){
+
+  try{
+
+    const saved =
+      JSON.parse(
+        localStorage.getItem(
+          "ak_scalper_stats"
+        )
+      );
+
+    if(saved){
+
+      total =
+        Number(saved.total) || 0;
+
+      wins =
+        Number(saved.wins) || 0;
+
+      losses =
+        Number(saved.losses) || 0;
+
+    }
+
+  }catch(e){
+
+    console.warn(
+      "Stats load error",
+      e
+    );
+
+  }
+
+  updateStats();
+
+}
+
+
+function saveStats(){
+
+  localStorage.setItem(
+    "ak_scalper_stats",
+
+    JSON.stringify({
+      total,
+      wins,
+      losses
+    })
+
+  );
+
+}
+
+
+function updateStats(){
+
+  $("total-trades").innerText =
+    total;
+
+  $("wins").innerText =
+    wins;
+
+  $("losses").innerText =
+    losses;
+
+  $("win-rate").innerText =
+    total > 0
+      ? `${Math.round((wins / total) * 100)}%`
+      : "0%";
+
+}
+
 
 function recordTrade(isWin){
- total++;
- if(isWin) wins++; else losses++;
- document.getElementById("total-trades").innerText=total;
- document.getElementById("wins").innerText=wins;
- document.getElementById("losses").innerText=losses;
- document.getElementById("win-rate").innerText=`${Math.round((wins/total)*100)}%`;
+
+  total++;
+
+  if(isWin)
+    wins++;
+  else
+    losses++;
+
+  updateStats();
+
+  saveStats();
+
 }
 
-window.onload=()=>{
- checkLockStatus();
- updateTVWidget();
-};
+
+/* ================= TRADE BUTTONS ================= */
+
+$("win-btn").addEventListener(
+  "click",
+  ()=>recordTrade(true)
+);
+
+$("loss-btn").addEventListener(
+  "click",
+  ()=>recordTrade(false)
+);
+
+
+/* ================= START ================= */
+
+window.addEventListener(
+  "load",
+  ()=>{
+
+    checkLockStatus();
+
+    loadStats();
+
+    updateTVWidget();
+
+    startAutoScan();
+
+    /*
+      Initial scan after UI loads.
+    */
+
+    setTimeout(
+      fetchAndAnalyze,
+      900
+    );
+
+  }
+);
+
 </script>
+
 </body>
 </html>
