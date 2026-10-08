@@ -23,10 +23,91 @@ export default async function handler(req, res) {
   // ENV
   // =========================
   const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+
   const GEMINI_MODEL =
     process.env.GEMINI_MODEL || "gemini-3.5-flash-lite";
 
-  const TWELVE_DATA_API_KEY = process.env.TWELVE_DATA_API_KEY;
+  const TWELVE_DATA_API_KEY =
+    process.env.TWELVE_DATA_API_KEY;
+
+  // =========================
+  // TWELVE DATA CREDIT TRACKER
+  // =========================
+  // These values are updated from Twelve Data
+  // response headers:
+  // api-credits-used
+  // api-credits-left
+  //
+  // IMPORTANT:
+  // We do NOT call /api_usage because that endpoint
+  // itself consumes 1 API credit.
+  // =========================
+
+  const twelveCredits = {
+    used: 0,
+    left: null
+  };
+
+  function updateTwelveCredits(headers) {
+    if (!headers) return;
+
+    const usedRaw =
+      headers.get("api-credits-used");
+
+    const leftRaw =
+      headers.get("api-credits-left");
+
+    const used =
+      Number(usedRaw);
+
+    const left =
+      Number(leftRaw);
+
+    if (Number.isFinite(used)) {
+      twelveCredits.used =
+        Math.max(
+          twelveCredits.used,
+          used
+        );
+    }
+
+    if (Number.isFinite(left)) {
+      if (
+        twelveCredits.left === null
+      ) {
+        twelveCredits.left = left;
+      } else {
+        twelveCredits.left =
+          Math.min(
+            twelveCredits.left,
+            left
+          );
+      }
+    }
+  }
+
+  function getCreditInfo() {
+    const hasLeft =
+      Number.isFinite(
+        twelveCredits.left
+      );
+
+    return {
+      apiCreditsUsed:
+        twelveCredits.used,
+
+      apiCreditsLeft:
+        hasLeft
+          ? twelveCredits.left
+          : null,
+
+      apiCreditsLimit:
+        hasLeft
+          ? twelveCredits.used +
+            twelveCredits.left
+          : null
+    };
+  }
 
   // =========================
   // PAIRS
@@ -130,40 +211,68 @@ export default async function handler(req, res) {
 
   function num(v, fallback = 0) {
     const n = Number(v);
-    return Number.isFinite(n) ? n : fallback;
+
+    return Number.isFinite(n)
+      ? n
+      : fallback;
   }
 
   function average(arr) {
-    if (!arr.length) return 0;
-    return arr.reduce((a, b) => a + b, 0) / arr.length;
+    if (!arr.length) {
+      return 0;
+    }
+
+    return (
+      arr.reduce(
+        (a, b) => a + b,
+        0
+      ) / arr.length
+    );
   }
 
   function clamp(v, min, max) {
-    return Math.max(min, Math.min(max, v));
+    return Math.max(
+      min,
+      Math.min(max, v)
+    );
   }
 
   // =========================
   // FETCH JSON WITH TIMEOUT
   // =========================
-  async function fetchJson(url, options = {}, timeoutMs = 8000) {
-    const controller = new AbortController();
+  async function fetchJson(
+    url,
+    options = {},
+    timeoutMs = 8000,
+    returnMeta = false
+  ) {
+    const controller =
+      new AbortController();
 
-    const timer = setTimeout(() => {
-      controller.abort();
-    }, timeoutMs);
+    const timer =
+      setTimeout(() => {
+        controller.abort();
+      }, timeoutMs);
 
     try {
-      const response = await fetch(url, {
-        ...options,
-        signal: controller.signal
-      });
+      const response =
+        await fetch(
+          url,
+          {
+            ...options,
+            signal:
+              controller.signal
+          }
+        );
 
-      const text = await response.text();
+      const text =
+        await response.text();
 
       let json;
 
       try {
-        json = JSON.parse(text);
+        json =
+          JSON.parse(text);
       } catch {
         throw new Error(
           `Invalid JSON response (${response.status})`
@@ -179,6 +288,14 @@ export default async function handler(req, res) {
         throw new Error(msg);
       }
 
+      if (returnMeta) {
+        return {
+          json,
+          headers:
+            response.headers
+        };
+      }
+
       return json;
     } finally {
       clearTimeout(timer);
@@ -188,75 +305,146 @@ export default async function handler(req, res) {
   // =========================
   // TWELVE DATA FOREX
   // =========================
-  async function fetchTwelveData(pair, timeframe) {
+  async function fetchTwelveData(
+    pair,
+    timeframe
+  ) {
     if (!TWELVE_DATA_API_KEY) {
       throw new Error(
         "TWELVE_DATA_API_KEY is not configured"
       );
     }
 
-    const tf = TF_MAP[timeframe];
+    const tf =
+      TF_MAP[timeframe];
 
     if (!tf) {
-      throw new Error(`Unsupported timeframe: ${timeframe}`);
+      throw new Error(
+        `Unsupported timeframe: ${timeframe}`
+      );
     }
 
     const symbol =
       `${pair.slice(0, 3)}/${pair.slice(3, 6)}`;
 
-    const url = new URL(
-      "https://api.twelvedata.com/time_series"
+    const url =
+      new URL(
+        "https://api.twelvedata.com/time_series"
+      );
+
+    url.searchParams.set(
+      "symbol",
+      symbol
     );
 
-    url.searchParams.set("symbol", symbol);
-    url.searchParams.set("interval", tf.td);
-    url.searchParams.set("outputsize", "250");
-    url.searchParams.set("timezone", "UTC");
+    url.searchParams.set(
+      "interval",
+      tf.td
+    );
+
+    url.searchParams.set(
+      "outputsize",
+      "250"
+    );
+
+    url.searchParams.set(
+      "timezone",
+      "UTC"
+    );
+
     url.searchParams.set(
       "apikey",
       TWELVE_DATA_API_KEY
     );
 
-    const json = await fetchJson(url.toString(), {}, 10000);
+    // Get both JSON and response headers
+    const result =
+      await fetchJson(
+        url.toString(),
+        {},
+        10000,
+        true
+      );
 
-    if (json?.status === "error") {
+    const json =
+      result.json;
+
+    // =========================
+    // UPDATE TWELVE DATA CREDITS
+    // =========================
+    updateTwelveCredits(
+      result.headers
+    );
+
+    if (
+      json?.status === "error"
+    ) {
       throw new Error(
-        json?.message || "Twelve Data API error"
+        json?.message ||
+          "Twelve Data API error"
       );
     }
 
-    if (!Array.isArray(json?.values)) {
+    if (
+      !Array.isArray(
+        json?.values
+      )
+    ) {
       throw new Error(
         "Twelve Data returned no candle data"
       );
     }
 
-    const candles = json.values
-      .map((x) => {
-        const time = Date.parse(
-          String(x.datetime).replace(" ", "T") + "Z"
+    const candles =
+      json.values
+        .map((x) => {
+          const time =
+            Date.parse(
+              String(
+                x.datetime
+              ).replace(
+                " ",
+                "T"
+              ) + "Z"
+            );
+
+          return {
+            time,
+
+            open:
+              num(x.open),
+
+            high:
+              num(x.high),
+
+            low:
+              num(x.low),
+
+            close:
+              num(x.close),
+
+            volume:
+              num(x.volume)
+          };
+        })
+        .filter(
+          (c) =>
+            Number.isFinite(
+              c.time
+            ) &&
+            c.open > 0 &&
+            c.high > 0 &&
+            c.low > 0 &&
+            c.close > 0
+        )
+        .sort(
+          (a, b) =>
+            a.time - b.time
         );
 
-        return {
-          time,
-          open: num(x.open),
-          high: num(x.high),
-          low: num(x.low),
-          close: num(x.close),
-          volume: num(x.volume)
-        };
-      })
-      .filter(
-        (c) =>
-          Number.isFinite(c.time) &&
-          c.open > 0 &&
-          c.high > 0 &&
-          c.low > 0 &&
-          c.close > 0
-      )
-      .sort((a, b) => a.time - b.time);
-
-    if (candles.length < 80) {
+    if (
+      candles.length < 80
+    ) {
       throw new Error(
         `Insufficient Twelve Data candles: ${candles.length}`
       );
@@ -268,20 +456,32 @@ export default async function handler(req, res) {
   // =========================
   // BINANCE CRYPTO
   // =========================
-  async function fetchBinance(pair, timeframe) {
-    const tf = TF_MAP[timeframe];
+  async function fetchBinance(
+    pair,
+    timeframe
+  ) {
+    const tf =
+      TF_MAP[timeframe];
 
     if (!tf) {
-      throw new Error(`Unsupported timeframe: ${timeframe}`);
+      throw new Error(
+        `Unsupported timeframe: ${timeframe}`
+      );
     }
 
-    const symbol = pair;
+    const symbol =
+      pair;
 
-    const url = new URL(
-      "https://api.binance.com/api/v3/klines"
+    const url =
+      new URL(
+        "https://api.binance.com/api/v3/klines"
+      );
+
+    url.searchParams.set(
+      "symbol",
+      symbol
     );
 
-    url.searchParams.set("symbol", symbol);
     url.searchParams.set(
       "interval",
       timeframe === "1m"
@@ -294,35 +494,69 @@ export default async function handler(req, res) {
         ? "30m"
         : "1h"
     );
-    url.searchParams.set("limit", "250");
 
-    const data = await fetchJson(url.toString(), {}, 8000);
+    url.searchParams.set(
+      "limit",
+      "250"
+    );
 
-    if (!Array.isArray(data)) {
-      throw new Error("Binance returned invalid candle data");
+    const data =
+      await fetchJson(
+        url.toString(),
+        {},
+        8000
+      );
+
+    if (
+      !Array.isArray(data)
+    ) {
+      throw new Error(
+        "Binance returned invalid candle data"
+      );
     }
 
-    const candles = data
-      .map((x) => ({
-        time: Number(x[0]),
-        open: Number(x[1]),
-        high: Number(x[2]),
-        low: Number(x[3]),
-        close: Number(x[4]),
-        volume: Number(x[5]),
-        closeTime: Number(x[6])
-      }))
-      .filter(
-        (c) =>
-          Number.isFinite(c.time) &&
-          c.open > 0 &&
-          c.high > 0 &&
-          c.low > 0 &&
-          c.close > 0
-      )
-      .sort((a, b) => a.time - b.time);
+    const candles =
+      data
+        .map((x) => ({
+          time:
+            Number(x[0]),
 
-    if (candles.length < 80) {
+          open:
+            Number(x[1]),
+
+          high:
+            Number(x[2]),
+
+          low:
+            Number(x[3]),
+
+          close:
+            Number(x[4]),
+
+          volume:
+            Number(x[5]),
+
+          closeTime:
+            Number(x[6])
+        }))
+        .filter(
+          (c) =>
+            Number.isFinite(
+              c.time
+            ) &&
+            c.open > 0 &&
+            c.high > 0 &&
+            c.low > 0 &&
+            c.close > 0
+        )
+        .sort(
+          (a, b) =>
+            a.time - b.time
+        );
+
+    if (
+      candles.length < 80
+    ) {
       throw new Error(
         `Insufficient Binance candles: ${candles.length}`
       );
@@ -334,18 +568,37 @@ export default async function handler(req, res) {
   // =========================
   // GET CANDLES
   // =========================
-  async function getCandles(pair, timeframe) {
-    if (isCryptoPair(pair)) {
+  async function getCandles(
+    pair,
+    timeframe
+  ) {
+    if (
+      isCryptoPair(pair)
+    ) {
       return {
-        candles: await fetchBinance(pair, timeframe),
-        source: "Binance"
+        candles:
+          await fetchBinance(
+            pair,
+            timeframe
+          ),
+
+        source:
+          "Binance"
       };
     }
 
-    if (FOREX_PAIRS.has(pair)) {
+    if (
+      FOREX_PAIRS.has(pair)
+    ) {
       return {
-        candles: await fetchTwelveData(pair, timeframe),
-        source: "Twelve Data"
+        candles:
+          await fetchTwelveData(
+            pair,
+            timeframe
+          ),
+
+        source:
+          "Twelve Data"
       };
     }
 
@@ -357,39 +610,70 @@ export default async function handler(req, res) {
   // =========================
   // CLOSED CANDLES ONLY
   // =========================
-  function closedCandles(candles, timeframe) {
-    const tf = TF_MAP[timeframe];
-    const intervalMs = tf.seconds * 1000;
-    const now = Date.now();
+  function closedCandles(
+    candles,
+    timeframe
+  ) {
+    const tf =
+      TF_MAP[timeframe];
+
+    const intervalMs =
+      tf.seconds * 1000;
+
+    const now =
+      Date.now();
 
     return candles
       .filter((c) => {
         const endTime =
           c.closeTime ||
-          c.time + intervalMs;
+          c.time +
+            intervalMs;
 
-        return endTime <= now;
+        return (
+          endTime <= now
+        );
       })
-      .sort((a, b) => a.time - b.time);
+      .sort(
+        (a, b) =>
+          a.time - b.time
+      );
   }
 
   // =========================
   // EMA
   // =========================
-  function ema(values, period) {
-    if (values.length < period) {
+  function ema(
+    values,
+    period
+  ) {
+    if (
+      values.length <
+      period
+    ) {
       return 0;
     }
 
     const multiplier =
-      2 / (period + 1);
+      2 /
+      (period + 1);
 
     let result =
-      average(values.slice(0, period));
+      average(
+        values.slice(
+          0,
+          period
+        )
+      );
 
-    for (let i = period; i < values.length; i++) {
+    for (
+      let i = period;
+      i < values.length;
+      i++
+    ) {
       result =
-        (values[i] - result) *
+        (values[i] -
+          result) *
           multiplier +
         result;
     }
@@ -400,81 +684,137 @@ export default async function handler(req, res) {
   // =========================
   // RSI
   // =========================
-  function rsi(values, period = 14) {
-    if (values.length <= period) {
+  function rsi(
+    values,
+    period = 14
+  ) {
+    if (
+      values.length <=
+      period
+    ) {
       return 50;
     }
 
     let gains = 0;
     let losses = 0;
 
-    for (let i = 1; i <= period; i++) {
+    for (
+      let i = 1;
+      i <= period;
+      i++
+    ) {
       const diff =
-        values[i] - values[i - 1];
+        values[i] -
+        values[i - 1];
 
-      if (diff >= 0) gains += diff;
-      else losses += Math.abs(diff);
+      if (
+        diff >= 0
+      ) {
+        gains += diff;
+      } else {
+        losses +=
+          Math.abs(diff);
+      }
     }
 
-    let avgGain = gains / period;
-    let avgLoss = losses / period;
+    let avgGain =
+      gains / period;
+
+    let avgLoss =
+      losses / period;
 
     for (
-      let i = period + 1;
+      let i =
+        period + 1;
       i < values.length;
       i++
     ) {
       const diff =
-        values[i] - values[i - 1];
+        values[i] -
+        values[i - 1];
 
       const gain =
-        diff > 0 ? diff : 0;
+        diff > 0
+          ? diff
+          : 0;
 
       const loss =
-        diff < 0 ? Math.abs(diff) : 0;
+        diff < 0
+          ? Math.abs(diff)
+          : 0;
 
       avgGain =
-        (avgGain * (period - 1) + gain) /
+        (avgGain *
+          (period - 1) +
+          gain) /
         period;
 
       avgLoss =
-        (avgLoss * (period - 1) + loss) /
+        (avgLoss *
+          (period - 1) +
+          loss) /
         period;
     }
 
-    if (avgLoss === 0) {
+    if (
+      avgLoss === 0
+    ) {
       return 100;
     }
 
     const rs =
-      avgGain / avgLoss;
+      avgGain /
+      avgLoss;
 
-    return 100 - 100 / (1 + rs);
+    return (
+      100 -
+      100 /
+        (1 + rs)
+    );
   }
 
   // =========================
   // ATR
   // =========================
-  function atr(candles, period = 14) {
-    if (candles.length <= period) {
+  function atr(
+    candles,
+    period = 14
+  ) {
+    if (
+      candles.length <=
+      period
+    ) {
       return 0;
     }
 
     const trs = [];
 
-    for (let i = 1; i < candles.length; i++) {
-      const current = candles[i];
-      const previous = candles[i - 1];
+    for (
+      let i = 1;
+      i < candles.length;
+      i++
+    ) {
+      const current =
+        candles[i];
 
-      const tr = Math.max(
-        current.high - current.low,
-        Math.abs(
-          current.high - previous.close
-        ),
-        Math.abs(
-          current.low - previous.close
-        )
-      );
+      const previous =
+        candles[i - 1];
+
+      const tr =
+        Math.max(
+          current.high -
+            current.low,
+
+          Math.abs(
+            current.high -
+              previous.close
+          ),
+
+          Math.abs(
+            current.low -
+              previous.close
+          )
+        );
 
       trs.push(tr);
     }
@@ -488,7 +828,10 @@ export default async function handler(req, res) {
   // MACD
   // =========================
   function macd(values) {
-    if (values.length < 35) {
+    if (
+      values.length <
+      35
+    ) {
       return {
         macd: 0,
         signal: 0,
@@ -504,21 +847,38 @@ export default async function handler(req, res) {
       i++
     ) {
       const slice =
-        values.slice(0, i + 1);
+        values.slice(
+          0,
+          i + 1
+        );
 
-      if (slice.length < 26) {
+      if (
+        slice.length < 26
+      ) {
         continue;
       }
 
-      const fast = ema(slice, 12);
-      const slow = ema(slice, 26);
+      const fast =
+        ema(
+          slice,
+          12
+        );
+
+      const slow =
+        ema(
+          slice,
+          26
+        );
 
       macdSeries.push(
         fast - slow
       );
     }
 
-    if (macdSeries.length < 9) {
+    if (
+      macdSeries.length <
+      9
+    ) {
       return {
         macd: 0,
         signal: 0,
@@ -527,38 +887,61 @@ export default async function handler(req, res) {
     }
 
     const currentMacd =
-      macdSeries[macdSeries.length - 1];
+      macdSeries[
+        macdSeries.length - 1
+      ];
 
     const signalLine =
-      ema(macdSeries, 9);
+      ema(
+        macdSeries,
+        9
+      );
 
     return {
-      macd: currentMacd,
-      signal: signalLine,
+      macd:
+        currentMacd,
+
+      signal:
+        signalLine,
+
       histogram:
-        currentMacd - signalLine
+        currentMacd -
+        signalLine
     };
   }
 
   // =========================
   // CANDLE ANALYSIS
   // =========================
-  function analyzeCandle(candle) {
+  function analyzeCandle(
+    candle
+  ) {
     const range =
-      candle.high - candle.low;
+      candle.high -
+      candle.low;
 
-    if (range <= 0) {
+    if (
+      range <= 0
+    ) {
       return {
-        direction: "NEUTRAL",
-        bodyPercent: 0,
-        upperWick: 0,
-        lowerWick: 0
+        direction:
+          "NEUTRAL",
+
+        bodyPercent:
+          0,
+
+        upperWick:
+          0,
+
+        lowerWick:
+          0
       };
     }
 
     const body =
       Math.abs(
-        candle.close - candle.open
+        candle.close -
+          candle.open
       );
 
     const bodyPercent =
@@ -575,22 +958,33 @@ export default async function handler(req, res) {
       Math.min(
         candle.open,
         candle.close
-      ) - candle.low;
+      ) -
+      candle.low;
 
-    let direction = "NEUTRAL";
+    let direction =
+      "NEUTRAL";
 
-    if (candle.close > candle.open) {
-      direction = "BULLISH";
-    } else if (
-      candle.close < candle.open
+    if (
+      candle.close >
+      candle.open
     ) {
-      direction = "BEARISH";
+      direction =
+        "BULLISH";
+    } else if (
+      candle.close <
+      candle.open
+    ) {
+      direction =
+        "BEARISH";
     }
 
     return {
       direction,
+
       bodyPercent,
+
       upperWick,
+
       lowerWick
     };
   }
@@ -598,21 +992,31 @@ export default async function handler(req, res) {
   // =========================
   // SUPPORT / RESISTANCE
   // =========================
-  function supportResistance(candles) {
+  function supportResistance(
+    candles
+  ) {
     const recent =
       candles.slice(-40);
 
     const highs =
-      recent.map((c) => c.high);
+      recent.map(
+        (c) => c.high
+      );
 
     const lows =
-      recent.map((c) => c.low);
+      recent.map(
+        (c) => c.low
+      );
 
     const resistance =
-      Math.max(...highs);
+      Math.max(
+        ...highs
+      );
 
     const support =
-      Math.min(...lows);
+      Math.min(
+        ...lows
+      );
 
     return {
       support,
@@ -630,18 +1034,25 @@ export default async function handler(req, res) {
     e50,
     atrValue
   ) {
-    if (!atrValue) {
+    if (
+      !atrValue
+    ) {
       return 0;
     }
 
     const spread =
-      Math.abs(e9 - e21);
+      Math.abs(
+        e9 - e21
+      );
 
     const longSpread =
-      Math.abs(e21 - e50);
+      Math.abs(
+        e21 - e50
+      );
 
     const raw =
-      ((spread + longSpread) /
+      ((spread +
+        longSpread) /
         atrValue) *
       25;
 
@@ -655,34 +1066,68 @@ export default async function handler(req, res) {
   // =========================
   // TECHNICAL ENGINE
   // =========================
-  function technicalAnalysis(candles) {
+  function technicalAnalysis(
+    candles
+  ) {
     const closes =
-      candles.map((c) => c.close);
+      candles.map(
+        (c) => c.close
+      );
 
     const current =
-      candles[candles.length - 1];
+      candles[
+        candles.length - 1
+      ];
 
     const previous =
-      candles[candles.length - 2];
+      candles[
+        candles.length - 2
+      ];
 
-    const e9 = ema(closes, 9);
-    const e21 = ema(closes, 21);
-    const e50 = ema(closes, 50);
+    const e9 =
+      ema(
+        closes,
+        9
+      );
+
+    const e21 =
+      ema(
+        closes,
+        21
+      );
+
+    const e50 =
+      ema(
+        closes,
+        50
+      );
 
     const rsiValue =
-      rsi(closes, 14);
+      rsi(
+        closes,
+        14
+      );
 
     const atrValue =
-      atr(candles, 14);
+      atr(
+        candles,
+        14
+      );
 
     const macdValue =
-      macd(closes);
+      macd(
+        closes
+      );
 
     const candle =
-      analyzeCandle(current);
+      analyzeCandle(
+        current
+      );
 
     const levels =
-      supportResistance(candles);
+      supportResistance(
+        candles
+      );
 
     const trend =
       trendStrength(
@@ -693,8 +1138,11 @@ export default async function handler(req, res) {
         atrValue
       );
 
-    let callScore = 50;
-    let putScore = 50;
+    let callScore =
+      50;
+
+    let putScore =
+      50;
 
     // =========================
     // EMA STRUCTURE
@@ -703,29 +1151,41 @@ export default async function handler(req, res) {
       e9 > e21 &&
       e21 > e50
     ) {
-      callScore += 16;
+      callScore +=
+        16;
     }
 
     if (
       e9 < e21 &&
       e21 < e50
     ) {
-      putScore += 16;
+      putScore +=
+        16;
     }
 
     // =========================
     // PRICE VS EMA
     // =========================
-    if (current.close > e9) {
-      callScore += 7;
+    if (
+      current.close >
+      e9
+    ) {
+      callScore +=
+        7;
     } else {
-      putScore += 7;
+      putScore +=
+        7;
     }
 
-    if (current.close > e21) {
-      callScore += 5;
+    if (
+      current.close >
+      e21
+    ) {
+      callScore +=
+        5;
     } else {
-      putScore += 5;
+      putScore +=
+        5;
     }
 
     // =========================
@@ -735,73 +1195,95 @@ export default async function handler(req, res) {
       rsiValue >= 52 &&
       rsiValue <= 68
     ) {
-      callScore += 10;
+      callScore +=
+        10;
     }
 
     if (
       rsiValue <= 48 &&
       rsiValue >= 32
     ) {
-      putScore += 10;
+      putScore +=
+        10;
     }
 
-    // Avoid blindly buying overbought
-    if (rsiValue > 72) {
-      callScore -= 10;
+    if (
+      rsiValue > 72
+    ) {
+      callScore -=
+        10;
     }
 
-    if (rsiValue < 28) {
-      putScore -= 10;
+    if (
+      rsiValue < 28
+    ) {
+      putScore -=
+        10;
     }
 
     // =========================
     // MACD
     // =========================
     if (
-      macdValue.histogram > 0 &&
+      macdValue.histogram >
+        0 &&
       macdValue.macd >=
         macdValue.signal
     ) {
-      callScore += 10;
+      callScore +=
+        10;
     }
 
     if (
-      macdValue.histogram < 0 &&
+      macdValue.histogram <
+        0 &&
       macdValue.macd <=
         macdValue.signal
     ) {
-      putScore += 10;
+      putScore +=
+        10;
     }
 
     // =========================
     // CANDLE
     // =========================
     if (
-      candle.direction === "BULLISH"
+      candle.direction ===
+      "BULLISH"
     ) {
-      callScore += 8;
+      callScore +=
+        8;
     }
 
     if (
-      candle.direction === "BEARISH"
+      candle.direction ===
+      "BEARISH"
     ) {
-      putScore += 8;
+      putScore +=
+        8;
     }
 
-    // Strong body confirmation
+    // =========================
+    // STRONG BODY
+    // =========================
     if (
-      candle.bodyPercent >= 0.60
+      candle.bodyPercent >=
+      0.60
     ) {
       if (
-        candle.direction === "BULLISH"
+        candle.direction ===
+        "BULLISH"
       ) {
-        callScore += 5;
+        callScore +=
+          5;
       }
 
       if (
-        candle.direction === "BEARISH"
+        candle.direction ===
+        "BEARISH"
       ) {
-        putScore += 5;
+        putScore +=
+          5;
       }
     }
 
@@ -810,16 +1292,20 @@ export default async function handler(req, res) {
     // =========================
     if (
       candle.lowerWick >
-        candle.upperWick * 1.5
+      candle.upperWick *
+        1.5
     ) {
-      callScore += 5;
+      callScore +=
+        5;
     }
 
     if (
       candle.upperWick >
-        candle.lowerWick * 1.5
+      candle.lowerWick *
+        1.5
     ) {
-      putScore += 5;
+      putScore +=
+        5;
     }
 
     // =========================
@@ -830,47 +1316,52 @@ export default async function handler(req, res) {
 
     const distanceToResistance =
       Math.abs(
-        levels.resistance - price
+        levels.resistance -
+          price
       );
 
     const distanceToSupport =
       Math.abs(
-        price - levels.support
+        price -
+          levels.support
       );
 
-    // Do NOT blindly CALL directly at resistance
     if (
       atrValue > 0 &&
       distanceToResistance <
         atrValue * 0.20
     ) {
-      callScore -= 15;
+      callScore -=
+        15;
     }
 
-    // Do NOT blindly PUT directly at support
     if (
       atrValue > 0 &&
       distanceToSupport <
         atrValue * 0.20
     ) {
-      putScore -= 15;
+      putScore -=
+        15;
     }
 
-    // Rejection away from levels
     if (
       distanceToSupport >
         atrValue * 0.50 &&
-      price > levels.support
+      price >
+        levels.support
     ) {
-      callScore += 3;
+      callScore +=
+        3;
     }
 
     if (
       distanceToResistance >
         atrValue * 0.50 &&
-      price < levels.resistance
+      price <
+        levels.resistance
     ) {
-      putScore += 3;
+      putScore +=
+        3;
     }
 
     // =========================
@@ -879,25 +1370,42 @@ export default async function handler(req, res) {
     const recent =
       candles.slice(-5);
 
-    let bullishCount = 0;
-    let bearishCount = 0;
+    let bullishCount =
+      0;
 
-    for (const c of recent) {
-      if (c.close > c.open) {
+    let bearishCount =
+      0;
+
+    for (
+      const c of recent
+    ) {
+      if (
+        c.close >
+        c.open
+      ) {
         bullishCount++;
       } else if (
-        c.close < c.open
+        c.close <
+        c.open
       ) {
         bearishCount++;
       }
     }
 
-    if (bullishCount >= 3) {
-      callScore += 5;
+    if (
+      bullishCount >=
+      3
+    ) {
+      callScore +=
+        5;
     }
 
-    if (bearishCount >= 3) {
-      putScore += 5;
+    if (
+      bearishCount >=
+      3
+    ) {
+      putScore +=
+        5;
     }
 
     // =========================
@@ -905,24 +1413,39 @@ export default async function handler(req, res) {
     // =========================
     const emaSpread =
       atrValue > 0
-        ? Math.abs(e9 - e21) /
+        ? Math.abs(
+            e9 - e21
+          ) /
           atrValue
         : 0;
 
-    // Very compressed EMA = weak momentum
-    if (emaSpread < 0.12) {
-      callScore -= 5;
-      putScore -= 5;
+    if (
+      emaSpread < 0.12
+    ) {
+      callScore -=
+        5;
+
+      putScore -=
+        5;
     }
 
     callScore =
-      clamp(callScore, 0, 100);
+      clamp(
+        callScore,
+        0,
+        100
+      );
 
     putScore =
-      clamp(putScore, 0, 100);
+      clamp(
+        putScore,
+        0,
+        100
+      );
 
     const signal =
-      callScore >= putScore
+      callScore >=
+      putScore
         ? "CALL"
         : "PUT";
 
@@ -939,10 +1462,12 @@ export default async function handler(req, res) {
       );
 
     const edge =
-      winner - loser;
+      winner -
+      loser;
 
     let technicalScore =
-      55 + edge * 0.55;
+      55 +
+      edge * 0.55;
 
     technicalScore +=
       trend * 0.10;
@@ -959,42 +1484,77 @@ export default async function handler(req, res) {
     // =========================
     // TRADE QUALITY
     // =========================
-    let quality = "NORMAL";
+    let quality =
+      "NORMAL";
 
-    if (edge >= 20) {
-      quality = "STRONG";
+    if (
+      edge >= 20
+    ) {
+      quality =
+        "STRONG";
     }
 
-    if (edge < 8) {
-      quality = "WEAK";
+    if (
+      edge < 8
+    ) {
+      quality =
+        "WEAK";
     }
 
-    // Weak setup should not be marketed as high confidence
     const tradeable =
       edge >= 8 &&
-      technicalScore >= 62;
+      technicalScore >=
+        62;
 
     return {
       signal,
-      callScore: Math.round(callScore),
-      putScore: Math.round(putScore),
+
+      callScore:
+        Math.round(
+          callScore
+        ),
+
+      putScore:
+        Math.round(
+          putScore
+        ),
+
       technicalScore,
+
       tradeable,
+
       quality,
 
       price,
 
       indicators: {
-        ema9: e9,
-        ema21: e21,
-        ema50: e50,
-        rsi: rsiValue,
-        atr: atrValue,
-        macd: macdValue.macd,
-        macdSignal: macdValue.signal,
+        ema9:
+          e9,
+
+        ema21:
+          e21,
+
+        ema50:
+          e50,
+
+        rsi:
+          rsiValue,
+
+        atr:
+          atrValue,
+
+        macd:
+          macdValue.macd,
+
+        macdSignal:
+          macdValue.signal,
+
         macdHistogram:
           macdValue.histogram,
-        trendStrength: trend,
+
+        trendStrength:
+          trend,
+
         emaSpread
       },
 
@@ -1003,16 +1563,20 @@ export default async function handler(req, res) {
       candle: {
         direction:
           candle.direction,
+
         bodyPercent:
           candle.bodyPercent,
+
         upperWick:
           candle.upperWick,
+
         lowerWick:
           candle.lowerWick
       },
 
       momentum: {
         bullishCount,
+
         bearishCount
       }
     };
@@ -1027,13 +1591,22 @@ export default async function handler(req, res) {
     technical,
     mtf
   }) {
-    if (!GEMINI_API_KEY) {
+    if (
+      !GEMINI_API_KEY
+    ) {
       return {
-        signal: "WAIT",
-        score: 0,
-        status: "UNAVAILABLE",
+        signal:
+          "WAIT",
+
+        score:
+          0,
+
+        status:
+          "UNAVAILABLE",
+
         error:
           "GEMINI_API_KEY is not configured",
+
         reason:
           "AI key missing"
       };
@@ -1092,7 +1665,9 @@ ${JSON.stringify(
 )}
 
 HIGHER TIMEFRAME:
-${JSON.stringify(mtf)}
+${JSON.stringify(
+  mtf
+)}
 
 Return JSON only:
 
@@ -1111,83 +1686,123 @@ Score must be 0-100.
       )}:generateContent`;
 
     try {
-      const response = await fetch(
-        url,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type":
-              "application/json",
-            "x-goog-api-key":
-              GEMINI_API_KEY
-          },
-          body: JSON.stringify({
-            contents: [
-              {
-                role: "user",
-                parts: [
+      const response =
+        await fetch(
+          url,
+          {
+            method:
+              "POST",
+
+            headers: {
+              "Content-Type":
+                "application/json",
+
+              "x-goog-api-key":
+                GEMINI_API_KEY
+            },
+
+            body:
+              JSON.stringify({
+                contents: [
                   {
-                    text: prompt
+                    role:
+                      "user",
+
+                    parts: [
+                      {
+                        text:
+                          prompt
+                      }
+                    ]
                   }
-                ]
-              }
-            ],
-            generationConfig: {
-              temperature: 0,
-              responseMimeType:
-                "application/json"
-            }
-          }),
-          signal:
-            AbortSignal.timeout(8000)
-        }
-      );
+                ],
+
+                generationConfig: {
+                  temperature:
+                    0,
+
+                  responseMimeType:
+                    "application/json"
+                }
+              }),
+
+            signal:
+              AbortSignal.timeout(
+                8000
+              )
+          }
+        );
 
       const raw =
         await response.text();
 
-      let data = null;
+      let data =
+        null;
 
       try {
-        data = JSON.parse(raw);
+        data =
+          JSON.parse(
+            raw
+          );
       } catch {
-        data = null;
+        data =
+          null;
       }
 
-      if (!response.ok) {
+      if (
+        !response.ok
+      ) {
         let message =
           data?.error?.message ||
           `Gemini HTTP ${response.status}`;
 
-        // Never expose secret/key
         message =
-          String(message)
-            .replace(
-              GEMINI_API_KEY,
-              "[REDACTED]"
-            );
+          String(
+            message
+          ).replace(
+            GEMINI_API_KEY,
+            "[REDACTED]"
+          );
 
         return {
-          signal: "WAIT",
-          score: 0,
-          status: "ERROR",
-          error: message,
+          signal:
+            "WAIT",
+
+          score:
+            0,
+
+          status:
+            "ERROR",
+
+          error:
+            message,
+
           reason:
             "Gemini API request failed"
         };
       }
 
       const text =
-        data?.candidates?.[0]?.content
-          ?.parts?.[0]?.text;
+        data
+          ?.candidates?.[0]
+          ?.content
+          ?.parts?.[0]
+          ?.text;
 
       if (!text) {
         return {
-          signal: "WAIT",
-          score: 0,
-          status: "ERROR",
+          signal:
+            "WAIT",
+
+          score:
+            0,
+
+          status:
+            "ERROR",
+
           error:
             "Gemini returned empty response",
+
           reason:
             "No AI response"
         };
@@ -1196,7 +1811,10 @@ Score must be 0-100.
       let parsed;
 
       try {
-        parsed = JSON.parse(text);
+        parsed =
+          JSON.parse(
+            text
+          );
       } catch {
         const cleaned =
           text
@@ -1211,14 +1829,19 @@ Score must be 0-100.
             .trim();
 
         try {
-          parsed = JSON.parse(cleaned);
+          parsed =
+            JSON.parse(
+              cleaned
+            );
         } catch {
           const match =
             cleaned.match(
               /\{[\s\S]*\}/
             );
 
-          if (match) {
+          if (
+            match
+          ) {
             parsed =
               JSON.parse(
                 match[0]
@@ -1227,13 +1850,22 @@ Score must be 0-100.
         }
       }
 
-      if (!parsed) {
+      if (
+        !parsed
+      ) {
         return {
-          signal: "WAIT",
-          score: 0,
-          status: "ERROR",
+          signal:
+            "WAIT",
+
+          score:
+            0,
+
+          status:
+            "ERROR",
+
           error:
             "Could not parse Gemini JSON",
+
           reason:
             "Invalid AI JSON"
         };
@@ -1241,39 +1873,65 @@ Score must be 0-100.
 
       let signal =
         String(
-          parsed.signal || "WAIT"
+          parsed.signal ||
+            "WAIT"
         ).toUpperCase();
 
       if (
-        !["CALL", "PUT", "WAIT"].includes(
+        ![
+          "CALL",
+          "PUT",
+          "WAIT"
+        ].includes(
           signal
         )
       ) {
-        signal = "WAIT";
+        signal =
+          "WAIT";
       }
 
       return {
         signal,
-        score: clamp(
-          Math.round(
-            num(parsed.score)
+
+        score:
+          clamp(
+            Math.round(
+              num(
+                parsed.score
+              )
+            ),
+            0,
+            100
           ),
-          0,
-          100
-        ),
-        status: "OK",
-        error: null,
+
+        status:
+          "OK",
+
+        error:
+          null,
+
         reason:
           String(
             parsed.reason ||
               "AI confirmation"
-          ).slice(0, 300)
+          ).slice(
+            0,
+            300
+          )
       };
-    } catch (error) {
+    } catch (
+      error
+    ) {
       return {
-        signal: "WAIT",
-        score: 0,
-        status: "ERROR",
+        signal:
+          "WAIT",
+
+        score:
+          0,
+
+        status:
+          "ERROR",
+
         error:
           error?.name ===
           "TimeoutError"
@@ -1282,6 +1940,7 @@ Score must be 0-100.
                 error?.message ||
                   "Gemini request failed"
               ),
+
         reason:
           "AI confirmation unavailable"
       };
@@ -1304,42 +1963,64 @@ Score must be 0-100.
         x === "PUT"
     );
 
-    if (!votes.length) {
+    if (
+      !votes.length
+    ) {
       return {
-        bias: "NEUTRAL",
-        agreement: false
+        bias:
+          "NEUTRAL",
+
+        agreement:
+          false
       };
     }
 
     const callVotes =
       votes.filter(
-        (x) => x === "CALL"
+        (x) =>
+          x === "CALL"
       ).length;
 
     const putVotes =
       votes.filter(
-        (x) => x === "PUT"
+        (x) =>
+          x === "PUT"
       ).length;
 
-    if (callVotes > putVotes) {
+    if (
+      callVotes >
+      putVotes
+    ) {
       return {
-        bias: "CALL",
+        bias:
+          "CALL",
+
         agreement:
-          callVotes === votes.length
+          callVotes ===
+          votes.length
       };
     }
 
-    if (putVotes > callVotes) {
+    if (
+      putVotes >
+      callVotes
+    ) {
       return {
-        bias: "PUT",
+        bias:
+          "PUT",
+
         agreement:
-          putVotes === votes.length
+          putVotes ===
+          votes.length
       };
     }
 
     return {
-      bias: "NEUTRAL",
-      agreement: false
+      bias:
+        "NEUTRAL",
+
+      agreement:
+        false
     };
   }
 
@@ -1360,30 +2041,54 @@ Score must be 0-100.
       );
 
     const pair =
-      normalizePair(inputPair);
+      normalizePair(
+        inputPair
+      );
 
-    if (!TF_MAP[timeframe]) {
-      return res.status(400).json({
-        ok: false,
-        signal: "WAIT",
-        reason:
-          "Unsupported timeframe"
-      });
+    if (
+      !TF_MAP[timeframe]
+    ) {
+      return res
+        .status(400)
+        .json({
+          ok:
+            false,
+
+          signal:
+            "WAIT",
+
+          reason:
+            "Unsupported timeframe",
+
+          ...getCreditInfo()
+        });
     }
 
     // =========================
     // PAIR VALIDATION
     // =========================
     if (
-      !FOREX_PAIRS.has(pair) &&
-      !isCryptoPair(pair)
+      !FOREX_PAIRS.has(
+        pair
+      ) &&
+      !isCryptoPair(
+        pair
+      )
     ) {
-      return res.status(400).json({
-        ok: false,
-        signal: "WAIT",
-        reason:
-          `Unsupported pair: ${pair}`
-      });
+      return res
+        .status(400)
+        .json({
+          ok:
+            false,
+
+          signal:
+            "WAIT",
+
+          reason:
+            `Unsupported pair: ${pair}`,
+
+          ...getCreditInfo()
+        });
     }
 
     // =========================
@@ -1393,20 +2098,23 @@ Score must be 0-100.
       entryData,
       fiveData,
       fifteenData
-    ] = await Promise.all([
-      getCandles(
-        pair,
-        timeframe
-      ),
-      getCandles(
-        pair,
-        "5m"
-      ),
-      getCandles(
-        pair,
-        "15m"
-      )
-    ]);
+    ] =
+      await Promise.all([
+        getCandles(
+          pair,
+          timeframe
+        ),
+
+        getCandles(
+          pair,
+          "5m"
+        ),
+
+        getCandles(
+          pair,
+          "15m"
+        )
+      ]);
 
     const entryCandles =
       closedCandles(
@@ -1427,18 +2135,31 @@ Score must be 0-100.
       );
 
     if (
-      entryCandles.length < 80 ||
-      fiveCandles.length < 80 ||
-      fifteenCandles.length < 80
+      entryCandles.length <
+        80 ||
+      fiveCandles.length <
+        80 ||
+      fifteenCandles.length <
+        80
     ) {
-      return res.status(200).json({
-        ok: false,
-        signal: "WAIT",
-        reason:
-          "Not enough closed candles",
-        pair,
-        timeframe
-      });
+      return res
+        .status(200)
+        .json({
+          ok:
+            false,
+
+          signal:
+            "WAIT",
+
+          reason:
+            "Not enough closed candles",
+
+          pair,
+
+          timeframe,
+
+          ...getCreditInfo()
+        });
     }
 
     // =========================
@@ -1453,18 +2174,23 @@ Score must be 0-100.
       ];
 
     const entryTf =
-      TF_MAP[timeframe];
+      TF_MAP[
+        timeframe
+      ];
 
     const entryEnd =
       entryLatest.closeTime ||
       entryLatest.time +
-        entryTf.seconds * 1000;
+        entryTf.seconds *
+          1000;
 
     const feedAgeSeconds =
       Math.max(
         0,
         Math.floor(
-          (now - entryEnd) / 1000
+          (now -
+            entryEnd) /
+            1000
         )
       );
 
@@ -1475,23 +2201,38 @@ Score must be 0-100.
       feedAgeSeconds >
       entryTf.staleLimit
     ) {
-      return res.status(200).json({
-        ok: false,
-        signal: "WAIT",
-        reason:
-          "Market feed is stale",
-        pair,
-        timeframe,
-        price:
-          entryLatest.close,
-        feedAgeSeconds,
-        staleLimit:
-          entryTf.staleLimit,
-        source:
-          entryData.source,
-        warning:
-          "No trade signal generated from stale market data."
-      });
+      return res
+        .status(200)
+        .json({
+          ok:
+            false,
+
+          signal:
+            "WAIT",
+
+          reason:
+            "Market feed is stale",
+
+          pair,
+
+          timeframe,
+
+          price:
+            entryLatest.close,
+
+          feedAgeSeconds,
+
+          staleLimit:
+            entryTf.staleLimit,
+
+          source:
+            entryData.source,
+
+          ...getCreditInfo(),
+
+          warning:
+            "No trade signal generated from stale market data."
+        });
     }
 
     // =========================
@@ -1524,14 +2265,20 @@ Score must be 0-100.
     const ai =
       await geminiConfirm({
         pair,
+
         timeframe,
+
         technical,
+
         mtf: {
           fiveMinute:
             analysis5.signal,
+
           fifteenMinute:
             analysis15.signal,
-          bias: mtf.bias
+
+          bias:
+            mtf.bias
         }
       });
 
@@ -1544,42 +2291,62 @@ Score must be 0-100.
     let finalScore =
       technical.technicalScore;
 
-    // Higher timeframe agreement
+    // =========================
+    // HIGHER TIMEFRAME AGREEMENT
+    // =========================
     if (
-      mtf.bias === finalSignal
+      mtf.bias ===
+      finalSignal
     ) {
-      finalScore += 5;
+      finalScore +=
+        5;
     }
 
-    // MTF conflict
+    // =========================
+    // MTF CONFLICT
+    // =========================
     if (
-      mtf.bias !== "NEUTRAL" &&
-      mtf.bias !== finalSignal
+      mtf.bias !==
+        "NEUTRAL" &&
+      mtf.bias !==
+        finalSignal
     ) {
-      finalScore -= 7;
+      finalScore -=
+        7;
     }
 
-    // AI agreement
+    // =========================
+    // AI AGREEMENT
+    // =========================
     if (
-      ai.status === "OK" &&
-      ai.signal === finalSignal
+      ai.status ===
+        "OK" &&
+      ai.signal ===
+        finalSignal
     ) {
       finalScore +=
         Math.min(
           6,
           Math.round(
-            ai.score / 20
+            ai.score /
+              20
           )
         );
     }
 
-    // AI conflict
+    // =========================
+    // AI CONFLICT
+    // =========================
     if (
-      ai.status === "OK" &&
-      ai.signal !== "WAIT" &&
-      ai.signal !== finalSignal
+      ai.status ===
+        "OK" &&
+      ai.signal !==
+        "WAIT" &&
+      ai.signal !==
+        finalSignal
     ) {
-      finalScore -= 5;
+      finalScore -=
+        5;
     }
 
     finalScore =
@@ -1594,8 +2361,11 @@ Score must be 0-100.
     // =========================
     // WEAK SETUP
     // =========================
-    if (!technical.tradeable) {
-      finalSignal = "WAIT";
+    if (
+      !technical.tradeable
+    ) {
+      finalSignal =
+        "WAIT";
 
       finalScore =
         Math.min(
@@ -1608,7 +2378,8 @@ Score must be 0-100.
     // ENTRY CANDLE
     // =========================
     const intervalMs =
-      entryTf.seconds * 1000;
+      entryTf.seconds *
+      1000;
 
     const nextCandleStart =
       entryEnd;
@@ -1620,121 +2391,170 @@ Score must be 0-100.
     // =========================
     // RESPONSE
     // =========================
-    return res.status(200).json({
-      ok: true,
+    return res
+      .status(200)
+      .json({
+        ok:
+          true,
 
-      pair,
-      timeframe,
+        pair,
 
-      signal: finalSignal,
-      score: finalScore,
+        timeframe,
 
-      technicalSignal:
-        technical.signal,
+        signal:
+          finalSignal,
 
-      technicalScore:
-        technical.technicalScore,
+        score:
+          finalScore,
 
-      callScore:
-        technical.callScore,
+        technicalSignal:
+          technical.signal,
 
-      putScore:
-        technical.putScore,
+        technicalScore:
+          technical.technicalScore,
 
-      tradeable:
-        technical.tradeable,
+        callScore:
+          technical.callScore,
 
-      quality:
-        technical.quality,
+        putScore:
+          technical.putScore,
 
-      aiSignal:
-        ai.signal,
+        tradeable:
+          technical.tradeable,
 
-      aiScore:
-        ai.score,
+        quality:
+          technical.quality,
 
-      aiStatus:
-        ai.status,
+        aiSignal:
+          ai.signal,
 
-      aiReason:
-        ai.reason,
+        aiScore:
+          ai.score,
 
-      aiError:
-        ai.error,
+        aiStatus:
+          ai.status,
 
-      mtf: {
-        bias:
-          mtf.bias,
+        aiReason:
+          ai.reason,
 
-        agreement:
-          mtf.agreement,
+        aiError:
+          ai.error,
 
-        fiveMinute:
-          analysis5.signal,
+        mtf: {
+          bias:
+            mtf.bias,
 
-        fiveMinuteScore:
-          analysis5.technicalScore,
+          agreement:
+            mtf.agreement,
 
-        fifteenMinute:
-          analysis15.signal,
+          fiveMinute:
+            analysis5.signal,
 
-        fifteenMinuteScore:
-          analysis15.technicalScore
-      },
+          fiveMinuteScore:
+            analysis5.technicalScore,
 
-      indicators:
-        technical.indicators,
+          fifteenMinute:
+            analysis15.signal,
 
-      levels:
-        technical.levels,
+          fifteenMinuteScore:
+            analysis15.technicalScore
+        },
 
-      candle:
-        technical.candle,
+        indicators:
+          technical.indicators,
 
-      momentum:
-        technical.momentum,
+        levels:
+          technical.levels,
 
-      price:
-        technical.price,
+        candle:
+          technical.candle,
 
-      feedAgeSeconds,
+        momentum:
+          technical.momentum,
 
-      feedTimestamp:
-        new Date(
-          entryEnd
-        ).toISOString(),
+        price:
+          technical.price,
 
-      nextCandleStart:
-        new Date(
-          nextCandleStart
-        ).toISOString(),
+        feedAgeSeconds,
 
-      nextCandleEnd:
-        new Date(
-          nextCandleEnd
-        ).toISOString(),
+        feedTimestamp:
+          new Date(
+            entryEnd
+          ).toISOString(),
 
-      source:
-        entryData.source,
+        nextCandleStart:
+          new Date(
+            nextCandleStart
+          ).toISOString(),
 
-      warning:
-        "Market-data feed may differ from Quotex execution price. No signal system can guarantee a winning trade."
-    });
-  } catch (error) {
+        nextCandleEnd:
+          new Date(
+            nextCandleEnd
+          ).toISOString(),
+
+        source:
+          entryData.source,
+
+        // =========================
+        // TWELVE DATA CREDITS
+        // =========================
+        apiCreditsUsed:
+          entryData.source ===
+          "Twelve Data"
+            ? twelveCredits.used
+            : null,
+
+        apiCreditsLeft:
+          entryData.source ===
+          "Twelve Data"
+            ? twelveCredits.left
+            : null,
+
+        apiCreditsLimit:
+          entryData.source ===
+            "Twelve Data" &&
+          twelveCredits.left !==
+            null
+            ? twelveCredits.used +
+              twelveCredits.left
+            : null,
+
+        warning:
+          "Market-data feed may differ from Quotex execution price. No signal system can guarantee a winning trade."
+      });
+  } catch (
+    error
+  ) {
     console.error(
       "SCAN ERROR:",
       error
     );
 
-    return res.status(200).json({
-      ok: false,
-      signal: "WAIT",
-      score: 0,
-      reason:
-        String(
-          error?.message ||
-            "Scan failed"
-        ).slice(0, 300)
-    });
+    return res
+      .status(200)
+      .json({
+        ok:
+          false,
+
+        signal:
+          "WAIT",
+
+        score:
+          0,
+
+        reason:
+          String(
+            error?.message ||
+              "Scan failed"
+          ).slice(
+            0,
+            300
+          ),
+
+        // =========================
+        // CREDITS EVEN ON ERROR
+        // =========================
+        ...getCreditInfo()
+      });
   }
 }
