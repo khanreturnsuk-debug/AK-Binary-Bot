@@ -573,6 +573,88 @@ select:focus{
   line-height:1.55;
 }
 
+/* ================= API CREDITS ================= */
+
+.credits-box{
+  margin-top:12px;
+
+  padding:11px;
+
+  background:
+    linear-gradient(145deg,rgba(59,130,246,.055),rgba(139,92,246,.035));
+
+  border:1px solid rgba(59,130,246,.16);
+  border-radius:13px;
+}
+
+.credits-title{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+
+  margin-bottom:8px;
+
+  color:#7f8da3;
+
+  font-size:8px;
+  font-weight:950;
+  letter-spacing:1px;
+}
+
+.credits-title i{
+  color:#60a5fa;
+  margin-right:4px;
+}
+
+.credits-grid{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:6px;
+}
+
+.credit-item{
+  padding:8px 5px;
+
+  text-align:center;
+
+  background:rgba(255,255,255,.025);
+
+  border:1px solid rgba(255,255,255,.045);
+  border-radius:10px;
+}
+
+.credit-item b{
+  display:block;
+
+  color:#e8edf5;
+
+  font-size:12px;
+  font-weight:950;
+}
+
+.credit-item span{
+  display:block;
+
+  margin-top:3px;
+
+  color:#657184;
+
+  font-size:7px;
+  font-weight:800;
+  letter-spacing:.4px;
+}
+
+.credit-note{
+  margin-top:7px;
+
+  text-align:center;
+
+  color:#596679;
+
+  font-size:7px;
+  line-height:1.4;
+}
+
 /* ================= TV ================= */
 
 .widget-container{
@@ -989,6 +1071,47 @@ select:focus{
       Ready. Press SCAN MARKET to analyze.
     </div>
 
+
+    <!-- Twelve Data API Credits -->
+    <div class="credits-box">
+
+      <div class="credits-title">
+        <span>
+          <i class="fas fa-database"></i>
+          TWELVE DATA API CREDITS
+        </span>
+
+        <span id="credits-status">
+          WAITING
+        </span>
+      </div>
+
+      <div class="credits-grid">
+
+        <div class="credit-item">
+          <b id="credits-used">--</b>
+          <span>USED</span>
+        </div>
+
+        <div class="credit-item">
+          <b id="credits-left">--</b>
+          <span>LEFT</span>
+        </div>
+
+        <div class="credit-item">
+          <b id="credits-limit">--</b>
+          <span>LIMIT</span>
+        </div>
+
+      </div>
+
+      <div class="credit-note">
+        Credits shown from the latest Twelve Data API response.
+        Crypto scans use Binance and do not consume Twelve Data credits.
+      </div>
+
+    </div>
+
   </div>
 
 
@@ -1148,6 +1271,81 @@ function priceDecimals(pair){
 }
 
 
+/* ================= API CREDITS ================= */
+
+function resetCreditsUI(){
+
+  $("credits-used").innerText =
+    "--";
+
+  $("credits-left").innerText =
+    "--";
+
+  $("credits-limit").innerText =
+    "--";
+
+  $("credits-status").innerText =
+    "WAITING";
+
+}
+
+
+function renderCredits(data){
+
+  const used =
+    Number(data.apiCreditsUsed);
+
+  const left =
+    Number(data.apiCreditsLeft);
+
+  const limit =
+    Number(data.apiCreditsLimit);
+
+
+  $("credits-used").innerText =
+    Number.isFinite(used)
+      ? used
+      : "--";
+
+
+  $("credits-left").innerText =
+    Number.isFinite(left)
+      ? left
+      : "--";
+
+
+  $("credits-limit").innerText =
+    Number.isFinite(limit)
+      ? limit
+      : "--";
+
+
+  if(
+    Number.isFinite(left)
+  ){
+
+    $("credits-status").innerText =
+      "LIVE";
+
+  }
+  else if(
+    data.dataSource === "Binance"
+  ){
+
+    $("credits-status").innerText =
+      "N/A";
+
+  }
+  else{
+
+    $("credits-status").innerText =
+      "UNAVAILABLE";
+
+  }
+
+}
+
+
 /* ================= RESET UI ================= */
 
 function resetUI(){
@@ -1196,6 +1394,8 @@ function resetUI(){
     $(id).innerText = "--";
 
   });
+
+  resetCreditsUI();
 
 }
 
@@ -1509,6 +1709,11 @@ function renderSignal(data){
       : "--";
 
 
+  /* Twelve Data Credits */
+
+  renderCredits(data);
+
+
   /* Reason */
 
   let reason =
@@ -1814,6 +2019,8 @@ window.addEventListener(
     checkLockStatus();
 
     loadStats();
+
+    resetCreditsUI();
 
     updateTVWidget();
 
