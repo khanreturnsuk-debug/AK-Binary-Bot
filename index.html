@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AK Institutional Scalper v22.0</title>
+<title>AK Institutional Scalper v23.0</title>
 
 <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
 <!-- TradingView Lightweight Charts CDN -->
@@ -49,98 +49,6 @@ body{
     radial-gradient(circle at 50% -10%,rgba(59,130,246,.17),transparent 35%),
     radial-gradient(circle at 100% 20%,rgba(139,92,246,.09),transparent 30%),
     linear-gradient(180deg,#070a10,#030509);
-}
-
-/* ================= LOCK SCREEN ================= */
-
-#lock-screen{
-  position:fixed;
-  inset:0;
-  z-index:99999;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  padding:20px;
-
-  background:
-    radial-gradient(circle at 50% 30%,rgba(37,211,102,.08),transparent 30%),
-    rgba(2,4,8,.97);
-
-  backdrop-filter:blur(18px);
-}
-
-.lock-card{
-  width:min(430px,100%);
-  padding:34px 26px;
-  text-align:center;
-
-  background:
-    linear-gradient(145deg,rgba(18,25,37,.98),rgba(7,11,17,.98));
-
-  border:1px solid rgba(37,211,102,.18);
-  border-radius:26px;
-
-  box-shadow:
-    0 35px 100px rgba(0,0,0,.75),
-    inset 0 1px 0 rgba(255,255,255,.04);
-}
-
-.lock-icon{
-  width:78px;
-  height:78px;
-  margin:0 auto 18px;
-
-  display:flex;
-  align-items:center;
-  justify-content:center;
-
-  border-radius:22px;
-
-  background:rgba(37,211,102,.08);
-  border:1px solid rgba(37,211,102,.18);
-
-  box-shadow:0 0 35px rgba(37,211,102,.08);
-}
-
-.lock-icon i{
-  font-size:42px;
-  color:#25d366;
-}
-
-.lock-card h2{
-  margin:0 0 8px;
-  font-size:23px;
-  font-weight:900;
-}
-
-.lock-card .premium{
-  color:#25d366;
-}
-
-.lock-card p{
-  color:var(--muted);
-  font-size:13px;
-  line-height:1.65;
-  margin:0 0 25px;
-}
-
-.btn-whatsapp{
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  gap:9px;
-
-  padding:14px;
-
-  border-radius:14px;
-
-  background:linear-gradient(135deg,#25d366,#13a653);
-  color:white;
-
-  text-decoration:none;
-  font-weight:900;
-
-  box-shadow:0 12px 30px rgba(37,211,102,.18);
 }
 
 /* ================= DASHBOARD ================= */
@@ -746,42 +654,6 @@ select:focus{
 
 <body>
 
-<!-- ================= LOCK SCREEN ================= -->
-
-<div id="lock-screen">
-
-  <div class="lock-card">
-
-    <div class="lock-icon">
-      <i class="fab fa-whatsapp"></i>
-    </div>
-
-    <h2>
-      <span class="premium">AK Premium</span>
-      Community Access
-    </h2>
-
-    <p>
-      Access to the <b>AK Institutional Scalper</b> requires joining
-      our official WhatsApp community.
-    </p>
-
-    <a
-      href="https://chat.whatsapp.com/HOOyD7NhzWWIhAq4LRuJZt"
-      target="_blank"
-      rel="noopener"
-      class="btn-whatsapp"
-      id="unlock-btn"
-    >
-      <i class="fab fa-whatsapp"></i>
-      Join Community To Unlock
-    </a>
-
-  </div>
-
-</div>
-
-
 <!-- ================= DASHBOARD ================= -->
 
 <div class="dashboard">
@@ -817,7 +689,7 @@ select:focus{
 
     <span class="version-badge">
       <i class="fas fa-microchip"></i>
-      AK INSTITUTIONAL SCALPER v22.0
+      AK INSTITUTIONAL SCALPER v23.0
     </span>
 
   </div>
@@ -888,4 +760,1169 @@ select:focus{
         <option value="AUDUSD">AUD/USD</option>
         <option value="GBPCAD">GBP/CAD</option>
         <option value="GBPCHF">GBP/CHF</option>
-        <option value="USDCAD
+        <option value="USDCAD">USD/CAD</option>
+        <option value="USDCHF">USD/CHF</option>
+        <option value="NZDUSD">NZD/USD</option>
+        <option value="GBPJPY">GBP/JPY</option>
+        <option value="EURGBP">EUR/GBP</option>
+
+        <option value="BTCUSDT">BTC/USDT</option>
+        <option value="ETHUSDT">ETH/USDT</option>
+
+      </select>
+
+    </div>
+
+
+    <div>
+
+      <label>TIMEFRAME</label>
+
+      <select id="tf">
+
+        <option value="1m">1 Minute</option>
+        <option value="5m">5 Minutes</option>
+
+      </select>
+
+    </div>
+
+  </div>
+
+
+  <!-- Manual Scan Only -->
+  <button
+    class="scan-btn"
+    id="scan-btn"
+  >
+
+    <i class="fas fa-radar"></i>
+
+    <span id="scan-text">
+      SCAN MARKET
+    </span>
+
+  </button>
+
+
+  <!-- Signal Card -->
+  <div class="signal-card">
+
+    <div class="signal-top">
+
+      <span
+        class="pill live"
+        id="feed-pill"
+      >
+        FEED: --
+      </span>
+
+      <span
+        class="pill"
+        id="bias-pill"
+      >
+        MTF: --
+      </span>
+
+    </div>
+
+
+    <div
+      class="signal-direction"
+      id="signal-dir"
+    >
+      READY
+    </div>
+
+
+    <div
+      class="confidence"
+      id="acc-badge"
+    >
+      Analysis confidence: --
+    </div>
+
+
+    <div
+      class="timer"
+      id="timer-box"
+    >
+      Next candle entry in: --
+    </div>
+
+
+    <!-- Engine -->
+    <div class="section-title">
+      ENGINE METRICS
+    </div>
+
+
+    <div class="grid">
+
+      <div class="metric">
+        <span>Technical Signal</span>
+        <b id="tech-signal">--</b>
+      </div>
+
+      <div class="metric">
+        <span>Technical Score</span>
+        <b id="tech-score">--</b>
+      </div>
+
+      <div class="metric">
+        <span>AI Confirmation</span>
+        <b id="ai-signal">--</b>
+      </div>
+
+      <div class="metric">
+        <span>AI Score</span>
+        <b id="ai-score">--</b>
+      </div>
+
+      <div class="metric">
+        <span>EMA 9 / 21 / 50</span>
+        <b id="ema-val">--</b>
+      </div>
+
+      <div class="metric">
+        <span>RSI</span>
+        <b id="rsi-val">--</b>
+      </div>
+
+      <div class="metric">
+        <span>MACD Histogram</span>
+        <b id="macd-val">--</b>
+      </div>
+
+      <div class="metric">
+        <span>Feed Age</span>
+        <b id="feed-age">--</b>
+      </div>
+
+    </div>
+
+
+    <!-- Extra backend data -->
+    <div class="section-title">
+      MARKET DATA
+    </div>
+
+
+    <div class="grid">
+
+      <div class="metric">
+        <span>Price</span>
+        <b id="price-val">--</b>
+      </div>
+
+      <div class="metric">
+        <span>ATR</span>
+        <b id="atr-val">--</b>
+      </div>
+
+      <div class="metric">
+        <span>Support</span>
+        <b id="support-val">--</b>
+      </div>
+
+      <div class="metric">
+        <span>Resistance</span>
+        <b id="resistance-val">--</b>
+      </div>
+
+    </div>
+
+
+    <!-- Status -->
+    <div class="section-title">
+      MARKET STATUS
+    </div>
+
+    <div
+      class="status"
+      id="filter-result"
+    >
+      Ready. Press SCAN MARKET to analyze.
+    </div>
+
+
+    <!-- Twelve Data API Credits -->
+    <div class="credits-box">
+
+      <div class="credits-title">
+        <span>
+          <i class="fas fa-database"></i>
+          TWELVE DATA API CREDITS
+        </span>
+
+        <span id="credits-status">
+          WAITING
+        </span>
+      </div>
+
+      <div class="credits-grid">
+
+        <div class="credit-item">
+          <b id="credits-used">--</b>
+          <span>USED</span>
+        </div>
+
+        <div class="credit-item">
+          <b id="credits-left">--</b>
+          <span>LEFT</span>
+        </div>
+
+        <div class="credit-item">
+          <b id="credits-limit">--</b>
+          <span>LIMIT</span>
+        </div>
+
+      </div>
+
+      <div class="credit-note">
+        Credits shown from the latest Twelve Data API response.
+        Crypto scans use Binance and do not consume Twelve Data credits.
+      </div>
+
+    </div>
+
+  </div>
+
+
+  <!-- Professional Lightweight Chart Container -->
+  <div
+    class="widget-container"
+    id="tv-widget-holder"
+    style="position:relative;"
+  ></div>
+
+
+  <!-- Manual Result -->
+  <div class="trade-buttons">
+
+    <button
+      class="win"
+      id="win-btn"
+    >
+      <i class="fas fa-check-circle"></i>
+      WIN
+    </button>
+
+    <button
+      class="loss"
+      id="loss-btn"
+    >
+      <i class="fas fa-times-circle"></i>
+      LOSS
+    </button>
+
+  </div>
+
+
+  <div class="footer">
+
+    AK Pro Candle Scalper v23.0 • Technical confirmation engine<br>
+
+    Signals are analytical only. No signal can guarantee a winning trade.
+
+  </div>
+
+</div>
+
+
+<script>
+
+/* =========================================================
+   AK INSTITUTIONAL SCALPER v23.0
+
+   IMPORTANT:
+   AUTO SCAN REMOVED.
+
+   API will ONLY be called when the user manually
+   presses the "SCAN MARKET" button.
+
+   Changing pair/timeframe does NOT call the API.
+========================================================= */
+
+
+/* ================= CONFIG ================= */
+
+const BACKEND_URL =
+  "https://ak-binary-bot.vercel.app/api/scan";
+
+let total = 0;
+let wins = 0;
+let losses = 0;
+
+let timerInterval = null;
+let isScanning = false;
+
+// Chart Globals
+let chart = null;
+let candlestickSeries = null;
+let supportLine = null;
+let resistanceLine = null;
+
+
+/* ================= ELEMENTS ================= */
+
+const $ = id =>
+  document.getElementById(id);
+
+
+/* ================= CLOCK ================= */
+
+function updateClock(){
+
+  const now = new Date();
+
+  $("clock").innerText =
+    now.toLocaleTimeString(
+      [],
+      {
+        hour:"2-digit",
+        minute:"2-digit",
+        second:"2-digit"
+      }
+    );
+
+}
+
+setInterval(updateClock,1000);
+updateClock();
+
+
+/* ================= FORMAT ================= */
+
+function fmt(value, decimals=2){
+
+  const n = Number(value);
+
+  if(!Number.isFinite(n))
+    return "--";
+
+  return n.toFixed(decimals);
+
+}
+
+
+function priceDecimals(pair){
+
+  if(pair.includes("JPY"))
+    return 3;
+
+  if(pair.includes("BTC"))
+    return 2;
+
+  if(pair.includes("ETH"))
+    return 2;
+
+  return 5;
+
+}
+
+
+/* ================= API CREDITS ================= */
+
+function resetCreditsUI(){
+
+  $("credits-used").innerText =
+    "--";
+
+  $("credits-left").innerText =
+    "--";
+
+  $("credits-limit").innerText =
+    "--";
+
+  $("credits-status").innerText =
+    "WAITING";
+
+}
+
+
+function renderCredits(data){
+
+  const used =
+    Number(data.apiCreditsUsed);
+
+  const left =
+    Number(data.apiCreditsLeft);
+
+  const limit =
+    Number(data.apiCreditsLimit);
+
+
+  $("credits-used").innerText =
+    Number.isFinite(used)
+      ? used
+      : "--";
+
+
+  $("credits-left").innerText =
+    Number.isFinite(left)
+      ? left
+      : "--";
+
+
+  $("credits-limit").innerText =
+    Number.isFinite(limit)
+      ? limit
+      : "--";
+
+
+  if(
+    Number.isFinite(left)
+  ){
+
+    $("credits-status").innerText =
+      "LIVE";
+
+  }
+  else if(
+    data.dataSource === "Binance"
+  ){
+
+    $("credits-status").innerText =
+      "N/A";
+
+  }
+  else{
+
+    $("credits-status").innerText =
+      "UNAVAILABLE";
+
+  }
+
+}
+
+
+/* ================= RESET UI ================= */
+
+function resetUI(){
+
+  clearInterval(timerInterval);
+
+  $("signal-dir").className =
+    "signal-direction";
+
+  $("signal-dir").innerText =
+    "READY";
+
+  $("acc-badge").innerText =
+    "Analysis confidence: --";
+
+  $("timer-box").innerText =
+    "Next candle entry in: --";
+
+  $("feed-pill").innerText =
+    "FEED: --";
+
+  $("bias-pill").innerText =
+    "MTF: --";
+
+  $("filter-result").innerText =
+    "Ready. Press SCAN MARKET to analyze.";
+
+  $("filter-result").style.color =
+    "#b9c3d0";
+
+  [
+    "tech-signal",
+    "tech-score",
+    "ai-signal",
+    "ai-score",
+    "ema-val",
+    "rsi-val",
+    "macd-val",
+    "feed-age",
+    "price-val",
+    "atr-val",
+    "support-val",
+    "resistance-val"
+  ].forEach(id=>{
+
+    $(id).innerText = "--";
+
+  });
+
+  resetCreditsUI();
+
+}
+
+
+/* ================= PROFESSIONAL LIGHTWEIGHT CHART ================= */
+
+function initChart() {
+  const holder = $("tv-widget-holder");
+  holder.innerHTML = "";
+
+  chart = LightweightCharts.createChart(holder, {
+    width: holder.clientWidth,
+    height: holder.clientHeight || 380,
+    layout: {
+      backgroundColor: '#070b11',
+      textColor: '#d1d4dc',
+    },
+    grid: {
+      vertLines: { color: 'rgba(255, 255, 255, 0.04)' },
+      horzLines: { color: 'rgba(255, 255, 255, 0.04)' },
+    },
+    crosshair: {
+      mode: LightweightCharts.CrosshairMode.Normal,
+    },
+    timeScale: {
+      timeVisible: true,
+      secondsVisible: true,
+      borderColor: 'rgba(255, 255, 255, 0.1)',
+    },
+    rightPriceScale: {
+      borderColor: 'rgba(255, 255, 255, 0.1)',
+    },
+  });
+
+  candlestickSeries = chart.addCandlestickSeries({
+    upColor: '#00d68f',
+    downColor: '#ff4567',
+    borderVisible: false,
+    wickUpColor: '#00d68f',
+    wickDownColor: '#ff4567',
+  });
+
+  window.addEventListener('resize', () => {
+    if(chart && holder) {
+      chart.applyOptions({ width: holder.clientWidth, height: holder.clientHeight || 380 });
+    }
+  });
+}
+
+function updateTVWidget(candlesData, levelsData, signalData) {
+  if (!chart) {
+    initChart();
+  }
+
+  if (candlesData && Array.isArray(candlesData) && candlesData.length > 0) {
+    const formattedCandles = candlesData.map(c => ({
+      time: Math.floor(c.time / 1000),
+      open: Number(c.open),
+      high: Number(c.high),
+      low: Number(c.low),
+      close: Number(c.close)
+    }));
+    candlestickSeries.setData(formattedCandles);
+  }
+
+  // Draw Support & Resistance Price Lines
+  if (levelsData) {
+    if (supportLine) candlestickSeries.removePriceLine(supportLine);
+    if (resistanceLine) candlestickSeries.removePriceLine(resistanceLine);
+
+    if (levelsData.support != null) {
+      supportLine = candlestickSeries.createPriceLine({
+        price: Number(levelsData.support),
+        color: '#00d68f',
+        lineWidth: 2,
+        lineStyle: LightweightCharts.LineStyle.Dashed,
+        axisLabelVisible: true,
+        title: 'SUPPORT',
+      });
+    }
+
+    if (levelsData.resistance != null) {
+      resistanceLine = candlestickSeries.createPriceLine({
+        price: Number(levelsData.resistance),
+        color: '#ff4567',
+        lineWidth: 2,
+        lineStyle: LightweightCharts.LineStyle.Dashed,
+        axisLabelVisible: true,
+        title: 'RESISTANCE',
+      });
+    }
+  }
+
+  // Render Signal Marker on Chart if available
+  if (signalData && (signalData.signal === 'CALL' || signalData.signal === 'PUT') && candlesData && candlesData.length > 0) {
+    const lastCandle = candlesData[candlesData.length - 1];
+    candlestickSeries.setMarkers([
+      {
+        time: Math.floor(lastCandle.time / 1000),
+        position: signalData.signal === 'CALL' ? 'belowBar' : 'aboveBar',
+        color: signalData.signal === 'CALL' ? '#00d68f' : '#ff4567',
+        shape: signalData.signal === 'CALL' ? 'arrowUp' : 'arrowDown',
+        text: `${signalData.signal} (${signalData.score}%)`
+      }
+    ]);
+  }
+}
+
+
+/* ================= BACKEND ================= */
+
+async function fetchBackend(
+  pair,
+  timeframe
+){
+
+  const controller =
+    new AbortController();
+
+  const timeout =
+    setTimeout(
+      ()=>controller.abort(),
+      22000
+    );
+
+  try{
+
+    const url =
+      `${BACKEND_URL}` +
+      `?pair=${encodeURIComponent(pair)}` +
+      `&timeframe=${encodeURIComponent(timeframe)}`;
+
+    const response =
+      await fetch(
+        url,
+        {
+          method:"GET",
+          signal:controller.signal,
+          cache:"no-store"
+        }
+      );
+
+    clearTimeout(timeout);
+
+    if(!response.ok){
+
+      throw new Error(
+        `HTTP ${response.status}`
+      );
+
+    }
+
+    return await response.json();
+
+  }catch(error){
+
+    clearTimeout(timeout);
+
+    console.error(
+      "AK Backend Error:",
+      error
+    );
+
+    return null;
+
+  }
+
+}
+
+
+/* ================= CANDLE TIMER ================= */
+
+function startTimer(){
+
+  clearInterval(timerInterval);
+
+  function update(){
+
+    const tf =
+      $("tf").value;
+
+    const now =
+      new Date();
+
+    let secondsLeft;
+
+    if(tf === "5m"){
+
+      secondsLeft =
+        300 -
+        (
+          (now.getMinutes() % 5) * 60
+          + now.getSeconds()
+        );
+
+    }else{
+
+      secondsLeft =
+        60 - now.getSeconds();
+
+    }
+
+    if(secondsLeft <= 0)
+      secondsLeft = 1;
+
+    $("timer-box").innerText =
+      `Next candle entry in: ${secondsLeft}s`;
+
+  }
+
+  update();
+
+  timerInterval =
+    setInterval(update,1000);
+
+}
+
+
+/* ================= RENDER SIGNAL ================= */
+
+function renderSignal(data){
+
+  const pair =
+    $("pair").value;
+
+  const signal =
+    String(
+      data.signal || "WAIT"
+    ).toUpperCase();
+
+  const score =
+    Number(data.score || 0);
+
+
+  /* Direction */
+
+  $("signal-dir").className =
+    "signal-direction " +
+    (
+      signal === "CALL"
+      || signal === "PUT"
+      || signal === "WAIT"
+        ? signal
+        : "ERROR"
+    );
+
+  $("signal-dir").innerText =
+    signal;
+
+
+  /* Confidence */
+
+  $("acc-badge").innerText =
+    `Analysis confidence: ${
+      Number.isFinite(score)
+        ? score
+        : "--"
+    }%`;
+
+
+  /* Technical */
+
+  $("tech-signal").innerText =
+    data.technicalSignal || "--";
+
+  $("tech-score").innerText =
+    data.technicalScore != null
+      ? `${data.technicalScore}%`
+      : "--";
+
+
+  /* AI */
+
+  $("ai-signal").innerText =
+    data.aiSignal || "--";
+
+  $("ai-score").innerText =
+    data.aiScore != null
+      ? `${data.aiScore}%`
+      : "--";
+
+
+  /* EMA */
+
+  const decimals =
+    priceDecimals(pair);
+
+  $("ema-val").innerText =
+    `${fmt(data.ema9,decimals)} / ` +
+    `${fmt(data.ema21,decimals)} / ` +
+    `${fmt(data.ema50,decimals)}`;
+
+
+  /* RSI */
+
+  $("rsi-val").innerText =
+    data.rsi != null
+      ? fmt(data.rsi,1)
+      : "--";
+
+
+  /* MACD */
+
+  $("macd-val").innerText =
+    data.macd &&
+    data.macd.histogram != null
+      ? fmt(data.macd.histogram,6)
+      : "--";
+
+
+  /* Feed age */
+
+  $("feed-age").innerText =
+    data.feedAgeSeconds != null
+      ? `${data.feedAgeSeconds}s`
+      : "--";
+
+
+  /* Feed */
+
+  $("feed-pill").innerText =
+    `FEED: ${data.dataSource || "--"}`;
+
+
+  /* MTF */
+
+  $("bias-pill").innerText =
+    `MTF: ${data.higherTimeframeBias || "--"}`;
+
+
+  /* Price */
+
+  $("price-val").innerText =
+    data.price != null
+      ? fmt(data.price,decimals)
+      : "--";
+
+
+  /* ATR */
+
+  $("atr-val").innerText =
+    data.atr != null
+      ? fmt(data.atr,decimals)
+      : "--";
+
+
+  /* Support */
+
+  $("support-val").innerText =
+    data.support != null
+      ? fmt(data.support,decimals)
+      : "--";
+
+
+  /* Resistance */
+
+  $("resistance-val").innerText =
+    data.resistance != null
+      ? fmt(data.resistance,decimals)
+      : "--";
+
+
+  /* Twelve Data Credits */
+
+  renderCredits(data);
+
+
+  /* Reason */
+
+  let reason =
+    data.aiReason ||
+    data.reason ||
+    "Market analysis completed.";
+
+  if(data.warning){
+
+    reason +=
+      ` ${data.warning}`;
+
+  }
+
+  $("filter-result").innerText =
+    reason;
+
+
+  /* Status */
+
+  if(signal === "CALL"){
+
+    $("filter-result").style.color =
+      "#79f5c5";
+
+  }
+  else if(signal === "PUT"){
+
+    $("filter-result").style.color =
+      "#ff8da4";
+
+  }
+  else{
+
+    $("filter-result").style.color =
+      "var(--yellow)";
+
+  }
+
+
+  /* Timer */
+
+  if(
+    signal === "CALL" ||
+    signal === "PUT"
+  ){
+
+    startTimer();
+
+  }else{
+
+    $("timer-box").innerText =
+      "No confirmed entry";
+
+  }
+
+  // Update Professional Lightweight Chart with backend candles & levels
+  if(data.candles && Array.isArray(data.candles)){
+    updateTVWidget(data.candles, { support: data.support, resistance: data.resistance }, { signal: signal, score: score });
+  }
+
+}
+
+
+/* ================= MANUAL SCAN ONLY ================= */
+
+async function fetchAndAnalyze(){
+
+  if(isScanning)
+    return;
+
+  isScanning = true;
+
+  const btn =
+    $("scan-btn");
+
+  const scanText =
+    $("scan-text");
+
+  const pair =
+    $("pair").value;
+
+  const tf =
+    $("tf").value;
+
+
+  btn.disabled = true;
+
+  scanText.innerText =
+    "ANALYZING...";
+
+
+  $("signal-dir").className =
+    "signal-direction";
+
+  $("signal-dir").innerText =
+    "SCANNING";
+
+
+  $("filter-result").innerText =
+    "Fetching closed candles + technical confirmation + MTF analysis...";
+
+  $("filter-result").style.color =
+    "#b9c3d0";
+
+
+  const data =
+    await fetchBackend(
+      pair,
+      tf
+    );
+
+
+  btn.disabled = false;
+
+  scanText.innerText =
+    "SCAN MARKET";
+
+  isScanning = false;
+
+
+  /* Backend unavailable */
+
+  if(!data){
+
+    $("signal-dir").className =
+      "signal-direction ERROR";
+
+    $("signal-dir").innerText =
+      "OFFLINE";
+
+    $("acc-badge").innerText =
+      "Backend unavailable";
+
+    $("filter-result").innerText =
+      "API connection failed or timed out. Check the Vercel API.";
+
+    $("filter-result").style.color =
+      "#94a3b8";
+
+    $("timer-box").innerText =
+      "No market data";
+
+    return;
+
+  }
+
+
+  /* Render backend response */
+
+  renderSignal(data);
+
+}
+
+
+/* ================= CHANGE HANDLERS ================= */
+
+$("pair").addEventListener(
+  "change",
+  ()=>{
+
+    resetUI();
+
+    initChart();
+
+  }
+);
+
+
+$("tf").addEventListener(
+  "change",
+  ()=>{
+
+    resetUI();
+
+    initChart();
+
+  }
+);
+
+
+/* ================= MANUAL SCAN BUTTON ================= */
+
+$("scan-btn").addEventListener(
+  "click",
+  fetchAndAnalyze
+);
+
+
+/* ================= LOCAL STATS ================= */
+
+function loadStats(){
+
+  try{
+
+    const saved =
+      JSON.parse(
+        localStorage.getItem(
+          "ak_scalper_stats"
+        )
+      );
+
+    if(saved){
+
+      total =
+        Number(saved.total) || 0;
+
+      wins =
+        Number(saved.wins) || 0;
+
+      losses =
+        Number(saved.losses) || 0;
+
+    }
+
+  }catch(e){
+
+    console.warn(
+      "Stats load error",
+      e
+    );
+
+  }
+
+  updateStats();
+
+}
+
+
+function saveStats(){
+
+  localStorage.setItem(
+    "ak_scalper_stats",
+
+    JSON.stringify({
+      total,
+      wins,
+      losses
+    })
+
+  );
+
+}
+
+
+function updateStats(){
+
+  $("total-trades").innerText =
+    total;
+
+  $("wins").innerText =
+    wins;
+
+  $("losses").innerText =
+    losses;
+
+  $("win-rate").innerText =
+    total > 0
+      ? `${Math.round((wins / total) * 100)}%`
+      : "0%";
+
+}
+
+
+function recordTrade(isWin){
+
+  total++;
+
+  if(isWin)
+    wins++;
+  else
+    losses++;
+
+  updateStats();
+
+  saveStats();
+
+}
+
+
+/* ================= TRADE BUTTONS ================= */
+
+$("win-btn").addEventListener(
+  "click",
+  ()=>recordTrade(true)
+);
+
+$("loss-btn").addEventListener(
+  "click",
+  ()=>recordTrade(false)
+);
+
+
+/* ================= START ================= */
+
+window.addEventListener(
+  "load",
+  ()=>{
+
+    loadStats();
+
+    resetCreditsUI();
+
+    initChart();
+
+  }
+);
+
+</script>
+
+</body>
+</html>
