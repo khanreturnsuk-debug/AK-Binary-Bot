@@ -272,7 +272,7 @@ export default async function handler(req, res) {
       `${pair.slice(0, 3)}/${pair.slice(3, 6)}`;
 
     const url = new URL(
-      "https://api.twelvedata.com/time_series"
+      "[https://api.twelvedata.com/time_series](https://api.twelvedata.com/time_series)"
     );
 
     url.searchParams.set("symbol", symbol);
@@ -318,7 +318,7 @@ export default async function handler(req, res) {
             : rawTime.replace(" ", "T");
 
         const time = Date.parse(
-          /Z$|[+-]\d{2}:\d{2}$/.test(
+          /Z$\vert{}[+-]\d{2}:\d{2}$/.test(
             normalizedTime
           )
             ? normalizedTime
@@ -376,7 +376,7 @@ export default async function handler(req, res) {
     }
 
     const url = new URL(
-      "https://api.binance.com/api/v3/klines"
+      "[https://api.binance.com/api/v3/klines](https://api.binance.com/api/v3/klines)"
     );
 
     url.searchParams.set("symbol", pair);
@@ -955,7 +955,7 @@ export default async function handler(req, res) {
 
     try {
       const response = await fetch(
-        "https://api.groq.com/openai/v1/chat/completions",
+        "[https://api.groq.com/openai/v1/chat/completions](https://api.groq.com/openai/v1/chat/completions)",
         {
           method: "POST",
 
@@ -968,6 +968,10 @@ export default async function handler(req, res) {
             model,
 
             messages: [
+              {
+                role: "system",
+                content: "You are a strict financial market analysis engine. You must output ONLY a valid raw JSON object. Do not wrap JSON in markdown blocks like ```json ... ```."
+              },
               {
                 role: "user",
                 content: prompt
@@ -1057,12 +1061,7 @@ export default async function handler(req, res) {
     }
 
     const prompt = `
-You are a technical market confirmation engine.
-
-Use ONLY the supplied data.
-Do not invent prices or indicators.
-Do not promise profit.
-Return valid JSON only.
+Analyze the supplied technical data and higher-timeframe agreement. Return valid JSON only with keys: signal ("CALL", "PUT", or "WAIT"), score (0 to 100), and reason (short explanation).
 
 PAIR: ${pair}
 TIMEFRAME: ${timeframe}
@@ -1088,27 +1087,13 @@ ${JSON.stringify(technical.momentum)}
 
 HIGHER_TIMEFRAME:
 ${JSON.stringify(mtf)}
-
-Analyze the supplied indicators and higher-timeframe
-agreement. If the setup is unclear or conflicting,
-return WAIT.
-
-Return this JSON structure:
-{
-  "signal": "CALL",
-  "score": 50,
-  "reason": "Short reason"
-}
-
-signal must be CALL, PUT, or WAIT.
-score must be a number from 0 to 100.
-reason must be a short explanation.
 `;
 
+    // Sab se reliable aur fast models ki priority list
     const models = [
       GROQ_MODEL,
       "llama-3.3-70b-versatile",
-      "openai/gpt-oss-20b"
+      "llama-3.1-8b-instant"
     ].filter(
       (model, index, array) =>
         model && array.indexOf(model) === index
@@ -1128,6 +1113,7 @@ reason must be a short explanation.
         try {
           parsed = JSON.parse(result.text);
         } catch {
+          // Fallback parsing agar model extra text ya markdown bhej de
           const cleaned = result.text
             .replace(/```json/gi, "")
             .replace(/```/g, "")
@@ -1180,20 +1166,19 @@ reason must be a short explanation.
       } catch (error) {
         lastError = error;
 
-        // Retry another model only for model/request
-        // compatibility errors.
+        // Agar model nahi mila ya 400/404 error hai toh agle model par switch karo
         if (
           error?.status !== 400 &&
           error?.status !== 404
         ) {
-          break;
+          // Doosre errors ke liye bhi loop jari rakh sakte hain ya break kar sakte hain
+          // Yahan hum next model par try karne denge
         }
       }
     }
 
     let message = errorMessage(lastError);
 
-    // Never expose the API key.
     if (GROQ_API_KEY) {
       message = message.replace(
         GROQ_API_KEY,
@@ -1351,7 +1336,6 @@ reason must be a short explanation.
 
     const tf = TF[timeframe];
 
-    // Do not generate a signal from stale candles.
     if (feedAgeSeconds > tf.staleLimit) {
       return res.status(200).json({
         ok: false,
@@ -1443,7 +1427,6 @@ reason must be a short explanation.
       98
     );
 
-    // Weak setups remain WAIT.
     if (!technical.tradeable) {
       finalSignal = "WAIT";
       finalScore = Math.min(finalScore, 61);
