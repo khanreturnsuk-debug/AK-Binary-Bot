@@ -1060,10 +1060,10 @@ HIGHER_TIMEFRAME:
 ${JSON.stringify(mtf)}
 `;
 
+    // Only stable and working model
     const models = [
       GROQ_MODEL,
-      "llama-3.3-70b-versatile",
-      "llama-3.1-8b-instant"
+      "llama-3.3-70b-versatile"
     ].filter(
       (model, index, array) =>
         model && array.indexOf(model) === index
