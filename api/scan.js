@@ -742,4 +742,94 @@ HIGHER_TIMEFRAME: ${JSON.stringify(mtf)}
       });
     }
 
-    
+    // Technical Multi-Timeframe Analysis
+    const technical = technicalAnalysis(entryCandles);
+    const analysis5 = technicalAnalysis(fiveCandles);
+    const analysis15 = technicalAnalysis(fifteenCandles);
+    const mtf = getMTFBias(analysis5, analysis15);
+
+    // Groq AI Confirmation
+    const ai = await groqConfirm({
+      pair, timeframe, technical,
+      mtf: { fiveMinute: analysis5.signal, fifteenMinute: analysis15.signal, bias: mtf.bias }
+    });
+
+    // Final Strict Signal Engine Logic
+    let finalSignal = technical.signal;
+    let finalScore = technical.technicalScore;
+
+    // Strict MTF Alignment Condition: MTF and 1m Technical MUST match!
+    if (mtf.bias === finalSignal && mtf.agreement) {
+      finalScore += 8;
+    } else {
+      finalSignal = "WAIT";
+      finalScore = Math.min(finalScore, 58);
+    }
+
+    if (ai.status === "OK" && ai.signal === finalSignal) {
+      finalScore += Math.min(6, Math.round(ai.score / 20));
+    } else if (ai.status === "OK" && ai.signal === "WAIT") {
+      finalSignal = "WAIT";
+    }
+
+    finalScore = clamp(Math.round(finalScore), 55, 98);
+
+    if (!technical.tradeable) {
+      finalSignal = "WAIT";
+      finalScore = Math.min(finalScore, 61);
+    }
+
+    const intervalMs = tf.seconds * 1000;
+    const nextCandleStart = entryEnd;
+    const nextCandleEnd = nextCandleStart + intervalMs;
+
+    return res.status(200).json({
+      ok: true,
+      pair,
+      timeframe,
+      signal: finalSignal,
+      score: finalScore,
+      candles: entryCandles, // <--- Added candles array for the live chart
+      technicalSignal: technical.signal,
+      technicalScore: technical.technicalScore,
+      callScore: technical.callScore,
+      putScore: technical.putScore,
+      tradeable: technical.tradeable,
+      quality: technical.quality,
+      aiSignal: ai.signal,
+      aiScore: ai.score,
+      aiStatus: ai.status,
+      aiReason: ai.reason,
+      aiError: ai.error,
+      aiModel: ai.model,
+      mtf: {
+        bias: mtf.bias,
+        agreement: mtf.agreement,
+        fiveMinute: analysis5.signal,
+        fiveMinuteScore: analysis5.technicalScore,
+        fifteenMinute: analysis15.signal,
+        fifteenMinuteScore: analysis15.technicalScore
+      },
+      indicators: technical.indicators,
+      levels: technical.levels,
+      support: technical.levels.support,
+      resistance: technical.levels.resistance,
+      candle: technical.candle,
+      momentum: technical.momentum,
+      price: technical.price,
+      feedAgeSeconds,
+      feedTimestamp: new Date(entryEnd).toISOString(),
+      nextCandleStart: new Date(nextCandleStart).toISOString(),
+      nextCandleEnd: new Date(nextCandleEnd).toISOString(),
+      source: responseSource,
+      ...creditInfo(responseSource),
+      warning: "Market-data feed may differ from Quotex execution price. No signal system can guarantee a winning trade."
+    });
+
+  } catch (error) {
+    console.error("SCAN ERROR:", error);
+    return res.status(200).json({
+      ok: false, signal: "WAIT", score: 0, reason: errorMessage(error), source: responseSource, ...creditInfo(responseSource)
+    });
+  }
+}
