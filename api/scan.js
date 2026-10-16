@@ -22,12 +22,12 @@ export default async function handler(req, res) {
   // =========================
   // ENVIRONMENT
   // =========================
-  const GEMINI_API_KEY =
-    process.env.GEMINI_API_KEY;
+  const GROQ_API_KEY =
+    process.env.GROQ_API_KEY;
 
-  const GEMINI_MODEL =
-    process.env.GEMINI_MODEL ||
-    "gemini-2.5-flash-lite";
+  const GROQ_MODEL =
+    process.env.GROQ_MODEL ||
+    "llama-3.3-70b-versatile";
 
   const TWELVE_DATA_API_KEY =
     process.env.TWELVE_DATA_API_KEY;
@@ -308,7 +308,6 @@ export default async function handler(req, res) {
 
     const candles = json.values
       .map((item) => {
-        // Twelve Data requested in UTC.
         const rawTime = String(
           item.datetime || ""
         ).trim();
@@ -941,63 +940,68 @@ export default async function handler(req, res) {
   }
 
   // =========================
-  // GEMINI REQUEST
+  // GROQ REQUEST
   // =========================
-  async function callGeminiModel(
+  async function callGroqModel(
     model,
     prompt
   ) {
-    const url =
-      `https://generativelanguage.googleapis.com/v1beta/models/` +
-      `${encodeURIComponent(model)}:generateContent`;
-
     const controller = new AbortController();
 
     const timer = setTimeout(
       () => controller.abort(),
-      10000
+      15000
     );
 
     try {
-      const response = await fetch(url, {
-        method: "POST",
+      const response = await fetch(
+        "https://api.groq.com/openai/v1/chat/completions",
+        {
+          method: "POST",
 
-        headers: {
-          "Content-Type": "application/json",
-          "x-goog-api-key": GEMINI_API_KEY
-        },
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${GROQ_API_KEY}`
+          },
 
-        body: JSON.stringify({
-          contents: [
-            {
-              role: "user",
-              parts: [{ text: prompt }]
-            }
-          ],
+          body: JSON.stringify({
+            model,
 
-          generationConfig: {
-            responseMimeType: "application/json",
-            maxOutputTokens: 256
-          }
-        }),
+            messages: [
+              {
+                role: "user",
+                content: prompt
+              }
+            ],
 
-        signal: controller.signal
-      });
+            response_format: {
+              type: "json_object"
+            },
+
+            max_tokens: 256,
+            temperature: 0.1
+          }),
+
+          signal: controller.signal
+        }
+      );
 
       const raw = await response.text();
 
-      let data = null;
+      let data;
 
       try {
         data = JSON.parse(raw);
       } catch {
-        data = null;
+        throw new Error(
+          `Invalid Groq response (HTTP ${response.status})`
+        );
       }
 
       if (!response.ok) {
         const error = new Error(
           data?.error?.message ||
-          `Gemini HTTP ${response.status}`
+          `Groq HTTP ${response.status}`
         );
 
         error.status = response.status;
@@ -1007,14 +1011,11 @@ export default async function handler(req, res) {
       }
 
       const text =
-        data?.candidates?.[0]?.content?.parts
-          ?.map((part) => part.text || "")
-          .join("")
-          .trim();
+        data?.choices?.[0]?.message?.content?.trim();
 
       if (!text) {
         throw new Error(
-          "Gemini returned an empty response"
+          "Groq returned an empty response"
         );
       }
 
@@ -1022,27 +1023,35 @@ export default async function handler(req, res) {
         text,
         model
       };
+
+    } catch (error) {
+      if (error?.name === "AbortError") {
+        throw new Error("Groq request timed out");
+      }
+
+      throw error;
+
     } finally {
       clearTimeout(timer);
     }
   }
 
   // =========================
-  // GEMINI CONFIRMATION
+  // GROQ AI CONFIRMATION
   // =========================
-  async function geminiConfirm({
+  async function groqConfirm({
     pair,
     timeframe,
     technical,
     mtf
   }) {
-    if (!GEMINI_API_KEY) {
+    if (!GROQ_API_KEY) {
       return {
         signal: "WAIT",
         score: 0,
         status: "UNAVAILABLE",
-        error: "GEMINI_API_KEY is missing in Vercel",
-        reason: "Gemini API key is not configured",
+        error: "GROQ_API_KEY is missing in Vercel",
+        reason: "Groq API key is not configured",
         model: null
       };
     }
@@ -1053,7 +1062,7 @@ You are a technical market confirmation engine.
 Use ONLY the supplied data.
 Do not invent prices or indicators.
 Do not promise profit.
-Return JSON only.
+Return valid JSON only.
 
 PAIR: ${pair}
 TIMEFRAME: ${timeframe}
@@ -1080,7 +1089,11 @@ ${JSON.stringify(technical.momentum)}
 HIGHER_TIMEFRAME:
 ${JSON.stringify(mtf)}
 
-Return this structure:
+Analyze the supplied indicators and higher-timeframe
+agreement. If the setup is unclear or conflicting,
+return WAIT.
+
+Return this JSON structure:
 {
   "signal": "CALL",
   "score": 50,
@@ -1089,26 +1102,23 @@ Return this structure:
 
 signal must be CALL, PUT, or WAIT.
 score must be a number from 0 to 100.
+reason must be a short explanation.
 `;
 
-    // Try the configured model first.
-    // Retry with the alternate model only if the
-    // selected model is unavailable.
     const models = [
-      GEMINI_MODEL,
-      ...(GEMINI_MODEL !== "gemini-2.5-flash-lite"
-        ? ["gemini-2.5-flash-lite"]
-        : []),
-      ...(GEMINI_MODEL !== "gemini-3.5-flash-lite"
-        ? ["gemini-3.5-flash-lite"]
-        : [])
-    ];
+      GROQ_MODEL,
+      "llama-3.3-70b-versatile",
+      "openai/gpt-oss-20b"
+    ].filter(
+      (model, index, array) =>
+        model && array.indexOf(model) === index
+    );
 
     let lastError = null;
 
-    for (const model of [...new Set(models)]) {
+    for (const model of models) {
       try {
-        const result = await callGeminiModel(
+        const result = await callGroqModel(
           model,
           prompt
         );
@@ -1134,7 +1144,7 @@ score must be a number from 0 to 100.
 
         if (!parsed) {
           throw new Error(
-            "Gemini response was not valid JSON"
+            "Groq response was not valid JSON"
           );
         }
 
@@ -1166,26 +1176,15 @@ score must be a number from 0 to 100.
 
           model: result.model
         };
+
       } catch (error) {
         lastError = error;
 
-        // Do not retry authentication, quota,
-        // rate-limit, or timeout failures.
-        const status = error?.status;
-
-        if (
-          status &&
-          status !== 400 &&
-          status !== 404
-        ) {
-          break;
-        }
-
-        // Only try the next model for model/request
+        // Retry another model only for model/request
         // compatibility errors.
         if (
-          status !== 400 &&
-          status !== 404
+          error?.status !== 400 &&
+          error?.status !== 404
         ) {
           break;
         }
@@ -1195,9 +1194,9 @@ score must be a number from 0 to 100.
     let message = errorMessage(lastError);
 
     // Never expose the API key.
-    if (GEMINI_API_KEY) {
+    if (GROQ_API_KEY) {
       message = message.replace(
-        GEMINI_API_KEY,
+        GROQ_API_KEY,
         "[REDACTED]"
       );
     }
@@ -1208,7 +1207,7 @@ score must be a number from 0 to 100.
       status: "ERROR",
       error: message,
       reason: message,
-      model: lastError?.model || GEMINI_MODEL
+      model: lastError?.model || GROQ_MODEL
     };
   }
 
@@ -1394,9 +1393,9 @@ score must be a number from 0 to 100.
     );
 
     // =========================
-    // GEMINI
+    // GROQ AI
     // =========================
-    const ai = await geminiConfirm({
+    const ai = await groqConfirm({
       pair,
       timeframe,
       technical,
@@ -1525,6 +1524,7 @@ score must be a number from 0 to 100.
       warning:
         "Market-data feed may differ from Quotex execution price. No signal system can guarantee a winning trade."
     });
+
   } catch (error) {
     console.error("SCAN ERROR:", error);
 
