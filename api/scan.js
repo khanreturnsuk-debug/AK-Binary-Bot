@@ -25,7 +25,7 @@ export default async function handler(req, res) {
   const GROQ_API_KEY = process.env.GROQ_API_KEY;
 
   const GROQ_MODEL =
-    process.env.GROQ_MODEL || "llama-3.3-70b-versatile";
+    process.env.GROQ_MODEL || "openai/gpt-oss-20b";
 
   const TWELVE_DATA_API_KEY = process.env.TWELVE_DATA_API_KEY;
 
@@ -67,14 +67,14 @@ export default async function handler(req, res) {
   }
 
   // =========================
-  // TIMEFRAMES
+  // TIMEFRAMES (Strict Live Limits)
   // =========================
   const TF = {
-    "1m": { td: "1min", seconds: 60, staleLimit: 90 },
-    "5m": { td: "5min", seconds: 300, staleLimit: 360 },
-    "15m": { td: "15min", seconds: 900, staleLimit: 900 },
-    "30m": { td: "30min", seconds: 1800, staleLimit: 1800 },
-    "1h": { td: "1h", seconds: 3600, staleLimit: 3600 }
+    "1m": { td: "1min", seconds: 60, staleLimit: 30 }, // Max 30s delay allowed for true live execution
+    "5m": { td: "5min", seconds: 300, staleLimit: 90 },
+    "15m": { td: "15min", seconds: 900, staleLimit: 180 },
+    "30m": { td: "30min", seconds: 1800, staleLimit: 360 },
+    "1h": { td: "1h", seconds: 3600, staleLimit: 600 }
   };
 
   // =========================
@@ -429,7 +429,7 @@ export default async function handler(req, res) {
   }
 
   // =========================
-  // TECHNICAL ANALYSIS ENGINE
+  // TECHNICAL ANALYSIS ENGINE (Strict Accuracy)
   // =========================
   function technicalAnalysis(candles) {
     const closes = candles.map((c) => c.close);
@@ -453,16 +453,18 @@ export default async function handler(req, res) {
     let callScore = 50;
     let putScore = 50;
 
-    if (e9 > e21 && e21 > e50) callScore += 16;
-    if (e9 < e21 && e21 < e50) putScore += 16;
+    if (e9 > e21 && e21 > e50) callScore += 18;
+    if (e9 < e21 && e21 < e50) putScore += 18;
 
     if (current.close > e9) callScore += 7; else putScore += 7;
     if (current.close > e21) callScore += 5; else putScore += 5;
 
     if (rsiValue >= 52 && rsiValue <= 68) callScore += 10;
     if (rsiValue <= 48 && rsiValue >= 32) putScore += 10;
-    if (rsiValue > 72) callScore -= 10;
-    if (rsiValue < 28) putScore -= 10;
+
+    // Strict RSI Reversal Filters to avoid Loss at Extremes
+    if (rsiValue > 70) { callScore -= 30; putScore -= 10; }
+    if (rsiValue < 30) { putScore -= 30; callScore -= 10; }
 
     if (macdValue.histogram > 0 && macdValue.macd >= macdValue.signal) callScore += 10;
     if (macdValue.histogram < 0 && macdValue.macd <= macdValue.signal) putScore += 10;
@@ -482,8 +484,9 @@ export default async function handler(req, res) {
     const distanceToResistance = Math.abs(levels.resistance - price);
     const distanceToSupport = Math.abs(price - levels.support);
 
-    if (atrValue > 0 && distanceToResistance < atrValue * 0.20) callScore -= 15;
-    if (atrValue > 0 && distanceToSupport < atrValue * 0.20) putScore -= 15;
+    // Filter signals near key S/R levels
+    if (atrValue > 0 && distanceToResistance < atrValue * 0.35) callScore -= 40;
+    if (atrValue > 0 && distanceToSupport < atrValue * 0.35) putScore -= 40;
 
     const recent = candles.slice(-5);
     let bullishCount = 0, bearishCount = 0;
@@ -497,8 +500,8 @@ export default async function handler(req, res) {
 
     const emaSpread = atrValue > 0 ? Math.abs(e9 - e21) / atrValue : 0;
     if (emaSpread < 0.12) {
-      callScore -= 5;
-      putScore -= 5;
+      callScore -= 10;
+      putScore -= 10;
     }
 
     callScore = clamp(callScore, 0, 100);
@@ -508,8 +511,8 @@ export default async function handler(req, res) {
     const edge = Math.abs(callScore - putScore);
 
     let technicalScore = clamp(Math.round(55 + edge * 0.55 + trend * 0.10), 55, 97);
-    const quality = edge >= 20 ? "STRONG" : edge < 8 ? "WEAK" : "NORMAL";
-    const tradeable = edge >= 8 && technicalScore >= 62;
+    const quality = edge >= 20 ? "STRONG" : edge < 10 ? "WEAK" : "NORMAL";
+    const tradeable = edge >= 12 && technicalScore >= 65;
 
     return {
       signal,
@@ -623,11 +626,10 @@ MOMENTUM: ${JSON.stringify(technical.momentum)}
 HIGHER_TIMEFRAME: ${JSON.stringify(mtf)}
 `;
 
-    // Only active Groq models in fallback sequence
     const models = [
       GROQ_MODEL,
-      "llama-3.3-70b-versatile",
-      "llama-3.1-8b-instant"
+      "openai/gpt-oss-20b",
+      "llama-3.3-70b-versatile"
     ].filter((model, index, array) => model && array.indexOf(model) === index);
 
     let lastError = null;
@@ -676,6 +678,9 @@ HIGHER_TIMEFRAME: ${JSON.stringify(mtf)}
     };
   }
 
+  // =========================
+  // MULTI TIMEFRAME BIAS
+  // =========================
   function getMTFBias(a5, a15) {
     const votes = [a5?.signal, a15?.signal].filter((x) => x === "CALL" || x === "PUT");
     const calls = votes.filter((x) => x === "CALL").length;
@@ -704,6 +709,7 @@ HIGHER_TIMEFRAME: ${JSON.stringify(mtf)}
       return res.status(400).json({ ok: false, signal: "WAIT", reason: `Unsupported pair: ${pair}`, ...creditInfo(null) });
     }
 
+    // Parallel multi-timeframe fetching (1m, 5m, 15m)
     const [entryData, fiveData, fifteenData] = await Promise.all([
       getCandles(pair, timeframe),
       getCandles(pair, "5m"),
@@ -719,6 +725,7 @@ HIGHER_TIMEFRAME: ${JSON.stringify(mtf)}
       return res.status(200).json({ ok: false, signal: "WAIT", pair, timeframe, reason: "Not enough closed candles", source: responseSource, ...creditInfo(responseSource) });
     }
 
+    // Strict Feed Age Check (Rejects Old Data)
     const latest = entryCandles[entryCandles.length - 1];
     const entryEnd = candleEnd(latest, timeframe);
     const now = Date.now();
@@ -729,66 +736,10 @@ HIGHER_TIMEFRAME: ${JSON.stringify(mtf)}
       return res.status(200).json({
         ok: false, signal: "WAIT", pair, timeframe, price: latest.close,
         feedAgeSeconds, staleLimit: tf.staleLimit, feedTimestamp: new Date(entryEnd).toISOString(),
-        source: responseSource, reason: "Market feed is stale", warning: "No trade signal generated from stale market data.",
+        source: responseSource, reason: "Market feed is stale. Waiting for fresh live candle.",
+        warning: "No trade signal generated from stale market data.",
         ...creditInfo(responseSource)
       });
     }
 
-    const technical = technicalAnalysis(entryCandles);
-    const analysis5 = technicalAnalysis(fiveCandles);
-    const analysis15 = technicalAnalysis(fifteenCandles);
-    const mtf = getMTFBias(analysis5, analysis15);
-
-    // Call Groq AI Engine
-    const ai = await groqConfirm({
-      pair, timeframe, technical,
-      mtf: { fiveMinute: analysis5.signal, fifteenMinute: analysis15.signal, bias: mtf.bias }
-    });
-
-    let finalSignal = technical.signal;
-    let finalScore = technical.technicalScore;
-
-    if (mtf.bias === finalSignal) finalScore += 5;
-    else if (mtf.bias !== "NEUTRAL") finalScore -= 7;
-
-    if (ai.status === "OK" && ai.signal === finalSignal) {
-      finalScore += Math.min(6, Math.round(ai.score / 20));
-    }
-
-    if (ai.status === "OK" && ai.signal !== "WAIT" && ai.signal !== finalSignal) {
-      finalScore -= 5;
-    }
-
-    finalScore = clamp(Math.round(finalScore), 55, 98);
-
-    if (!technical.tradeable) {
-      finalSignal = "WAIT";
-      finalScore = Math.min(finalScore, 61);
-    }
-
-    const intervalMs = tf.seconds * 1000;
-    const nextCandleStart = entryEnd;
-    const nextCandleEnd = nextCandleStart + intervalMs;
-
-    return res.status(200).json({
-      ok: true, pair, timeframe, signal: finalSignal, score: finalScore,
-      technicalSignal: technical.signal, technicalScore: technical.technicalScore,
-      callScore: technical.callScore, putScore: technical.putScore,
-      tradeable: technical.tradeable, quality: technical.quality,
-      aiSignal: ai.signal, aiScore: ai.score, aiStatus: ai.status,
-      aiReason: ai.reason, aiError: ai.error, aiModel: ai.model,
-      mtf: { bias: mtf.bias, agreement: mtf.agreement, fiveMinute: analysis5.signal, fiveMinuteScore: analysis5.technicalScore, fifteenMinute: analysis15.signal, fifteenMinuteScore: analysis15.technicalScore },
-      indicators: technical.indicators, levels: technical.levels, candle: technical.candle, momentum: technical.momentum,
-      price: technical.price, feedAgeSeconds, feedTimestamp: new Date(entryEnd).toISOString(),
-      nextCandleStart: new Date(nextCandleStart).toISOString(), nextCandleEnd: new Date(nextCandleEnd).toISOString(),
-      source: responseSource, ...creditInfo(responseSource),
-      warning: "Market-data feed may differ from Quotex execution price. No signal system can guarantee a winning trade."
-    });
-
-  } catch (error) {
-    console.error("SCAN ERROR:", error);
-    return res.status(200).json({
-      ok: false, signal: "WAIT", score: 0, reason: errorMessage(error), source: responseSource, ...creditInfo(responseSource)
-    });
-  }
-}
+    
