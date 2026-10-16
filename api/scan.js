@@ -268,24 +268,11 @@ export default async function handler(req, res) {
       );
     }
 
-    const symbol =
-      `${pair.slice(0, 3)}/${pair.slice(3, 6)}`;
-
-    const url = new URL(
-      "[https://api.twelvedata.com/time_series](https://api.twelvedata.com/time_series)"
-    );
-
-    url.searchParams.set("symbol", symbol);
-    url.searchParams.set("interval", tf.td);
-    url.searchParams.set("outputsize", "250");
-    url.searchParams.set("timezone", "UTC");
-    url.searchParams.set(
-      "apikey",
-      TWELVE_DATA_API_KEY
-    );
+    const symbol = `${pair.slice(0, 3)}/${pair.slice(3, 6)}`;
+    const url = `https://api.twelvedata.com/time_series?symbol=${encodeURIComponent(symbol)}&interval=${tf.td}&outputsize=250&timezone=UTC&apikey=${TWELVE_DATA_API_KEY}`;
 
     const result = await fetchJson(
-      url.toString(),
+      url,
       {},
       12000,
       true
@@ -375,16 +362,10 @@ export default async function handler(req, res) {
       );
     }
 
-    const url = new URL(
-      "[https://api.binance.com/api/v3/klines](https://api.binance.com/api/v3/klines)"
-    );
-
-    url.searchParams.set("symbol", pair);
-    url.searchParams.set("interval", interval);
-    url.searchParams.set("limit", "250");
+    const url = `https://api.binance.com/api/v3/klines?symbol=${encodeURIComponent(pair)}&interval=${interval}&limit=250`;
 
     const data = await fetchJson(
-      url.toString(),
+      url,
       {},
       10000
     );
@@ -726,7 +707,6 @@ export default async function handler(req, res) {
     let callScore = 50;
     let putScore = 50;
 
-    // EMA structure
     if (e9 > e21 && e21 > e50) {
       callScore += 16;
     }
@@ -735,7 +715,6 @@ export default async function handler(req, res) {
       putScore += 16;
     }
 
-    // Price vs EMA
     if (current.close > e9) {
       callScore += 7;
     } else {
@@ -748,7 +727,6 @@ export default async function handler(req, res) {
       putScore += 5;
     }
 
-    // RSI
     if (rsiValue >= 52 && rsiValue <= 68) {
       callScore += 10;
     }
@@ -760,7 +738,6 @@ export default async function handler(req, res) {
     if (rsiValue > 72) callScore -= 10;
     if (rsiValue < 28) putScore -= 10;
 
-    // MACD
     if (
       macdValue.histogram > 0 &&
       macdValue.macd >= macdValue.signal
@@ -775,7 +752,6 @@ export default async function handler(req, res) {
       putScore += 10;
     }
 
-    // Candle direction
     if (candle.direction === "BULLISH") {
       callScore += 8;
     }
@@ -784,7 +760,6 @@ export default async function handler(req, res) {
       putScore += 8;
     }
 
-    // Strong candle body
     if (candle.bodyPercent >= 0.60) {
       if (candle.direction === "BULLISH") {
         callScore += 5;
@@ -795,7 +770,6 @@ export default async function handler(req, res) {
       }
     }
 
-    // Wick rejection
     if (
       candle.lowerWick >
       candle.upperWick * 1.5
@@ -810,7 +784,6 @@ export default async function handler(req, res) {
       putScore += 5;
     }
 
-    // Support / resistance
     const price = current.close;
 
     const distanceToResistance =
@@ -849,7 +822,6 @@ export default async function handler(req, res) {
       putScore += 3;
     }
 
-    // Recent momentum
     const recent = candles.slice(-5);
 
     let bullishCount = 0;
@@ -863,7 +835,6 @@ export default async function handler(req, res) {
     if (bullishCount >= 3) callScore += 5;
     if (bearishCount >= 3) putScore += 5;
 
-    // Weak EMA spread
     const emaSpread = atrValue > 0
       ? Math.abs(e9 - e21) / atrValue
       : 0;
@@ -955,7 +926,7 @@ export default async function handler(req, res) {
 
     try {
       const response = await fetch(
-        "[https://api.groq.com/openai/v1/chat/completions](https://api.groq.com/openai/v1/chat/completions)",
+        "https://api.groq.com/openai/v1/chat/completions",
         {
           method: "POST",
 
@@ -1089,7 +1060,6 @@ HIGHER_TIMEFRAME:
 ${JSON.stringify(mtf)}
 `;
 
-    // Sab se reliable aur fast models ki priority list
     const models = [
       GROQ_MODEL,
       "llama-3.3-70b-versatile",
@@ -1113,7 +1083,6 @@ ${JSON.stringify(mtf)}
         try {
           parsed = JSON.parse(result.text);
         } catch {
-          // Fallback parsing agar model extra text ya markdown bhej de
           const cleaned = result.text
             .replace(/```json/gi, "")
             .replace(/```/g, "")
@@ -1165,15 +1134,6 @@ ${JSON.stringify(mtf)}
 
       } catch (error) {
         lastError = error;
-
-        // Agar model nahi mila ya 400/404 error hai toh agle model par switch karo
-        if (
-          error?.status !== 400 &&
-          error?.status !== 404
-        ) {
-          // Doosre errors ke liye bhi loop jari rakh sakte hain ya break kar sakte hain
-          // Yahan hum next model par try karne denge
-        }
       }
     }
 
@@ -1275,7 +1235,6 @@ ${JSON.stringify(mtf)}
       });
     }
 
-    // Fetch entry + higher timeframes.
     const [entryData, fiveData, fifteenData] =
       await Promise.all([
         getCandles(pair, timeframe),
